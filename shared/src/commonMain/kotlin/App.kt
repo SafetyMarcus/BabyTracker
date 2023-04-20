@@ -1,40 +1,35 @@
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import org.jetbrains.compose.resources.ExperimentalResourceApi
-import org.jetbrains.compose.resources.painterResource
 
-@OptIn(ExperimentalResourceApi::class)
+
+@OptIn(
+    ExperimentalMaterial3Api::class
+)
 @Composable
-fun App() {
-    MaterialTheme {
-        var greetingText by remember { mutableStateOf("Hello, World!") }
-        var showImage by remember { mutableStateOf(false) }
-        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Button(onClick = {
-                greetingText = "Hello, ${getPlatformName()}"
-                showImage = !showImage
-            }) {
-                Text(greetingText)
-            }
-            AnimatedVisibility(showImage) {
-                Image(
-                    painterResource("compose-multiplatform.xml"),
-                    null
+fun App() = AppTheme {
+    var selectedTabPosition by remember { mutableStateOf(0) }
+    Scaffold(
+        topBar = {
+            TabRow(
+                selectedTabIndex = selectedTabPosition,
+                modifier = Modifier.fillMaxWidth(),
+                divider = { Divider() },
+            ) {
+                Tab(
+                    selected = selectedTabPosition == 0,
+                    onClick = { selectedTabPosition = 0 },
+                    text = { Text("Sebastian") }
+                )
+                Tab(
+                    selected = selectedTabPosition == 1,
+                    onClick = { selectedTabPosition = 1 },
+                    text = { Text("Baby 2") }
                 )
             }
         }
+    ) {
     }
 }
 
