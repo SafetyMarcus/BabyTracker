@@ -1,14 +1,20 @@
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-
 
 @OptIn(
     ExperimentalMaterial3Api::class
 )
 @Composable
-fun App() = AppTheme {
+fun App(
+    viewModel: MainViewModel
+) = AppTheme {
+    val currentName by remember { viewModel.name }
     var selectedTabPosition by remember { mutableStateOf(0) }
     Scaffold(
         topBar = {
@@ -19,17 +25,29 @@ fun App() = AppTheme {
             ) {
                 Tab(
                     selected = selectedTabPosition == 0,
-                    onClick = { selectedTabPosition = 0 },
+                    onClick = {
+                        selectedTabPosition = 0
+                        viewModel.setCurrentTab(0)
+                    },
                     text = { Text("Sebastian") }
                 )
                 Tab(
                     selected = selectedTabPosition == 1,
-                    onClick = { selectedTabPosition = 1 },
+                    onClick = {
+                        selectedTabPosition = 1
+                        viewModel.setCurrentTab(1)
+                    },
                     text = { Text("Baby 2") }
                 )
             }
         }
     ) {
+        Box(modifier = Modifier.fillMaxSize().padding(it)) {
+            Text(
+                text = currentName,
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
     }
 }
 

@@ -34,6 +34,7 @@ kotlin {
                 implementation(compose.material3)
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.components.resources)
+                implementation("com.rickclephas.kmm:kmm-viewmodel-core:1.0.0-ALPHA-6")
             }
         }
         val androidMain by getting {
@@ -41,6 +42,7 @@ kotlin {
                 api("androidx.activity:activity-compose:1.6.1")
                 api("androidx.appcompat:appcompat:1.6.1")
                 api("androidx.core:core-ktx:1.9.0")
+                api("com.rickclephas.kmm:kmm-viewmodel-core:1.0.0-ALPHA-6")
             }
         }
         val iosX64Main by getting
