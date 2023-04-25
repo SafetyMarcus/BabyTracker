@@ -1,5 +1,6 @@
 plugins {
     kotlin("multiplatform")
+    kotlin("plugin.serialization") version "1.8.20"
     id("com.android.application")
     id("org.jetbrains.compose")
 }
@@ -10,6 +11,7 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 implementation(project(":shared"))
+                implementation("dev.gitlive:firebase-firestore:1.8.1")
             }
         }
     }

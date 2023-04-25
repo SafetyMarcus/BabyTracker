@@ -3,6 +3,7 @@ plugins {
     kotlin("native.cocoapods")
     id("com.android.library")
     id("org.jetbrains.compose")
+    id("com.google.gms.google-services")
 }
 
 kotlin {
@@ -35,6 +36,7 @@ kotlin {
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.components.resources)
                 implementation("com.rickclephas.kmm:kmm-viewmodel-core:1.0.0-ALPHA-6")
+                implementation("dev.gitlive:firebase-firestore:1.8.1")
             }
         }
         val androidMain by getting {
@@ -43,6 +45,7 @@ kotlin {
                 api("androidx.appcompat:appcompat:1.6.1")
                 api("androidx.core:core-ktx:1.9.0")
                 api("com.rickclephas.kmm:kmm-viewmodel-core:1.0.0-ALPHA-6")
+                api("dev.gitlive:firebase-firestore:1.8.1")
             }
         }
         val iosX64Main by getting
@@ -59,7 +62,7 @@ kotlin {
 
 android {
     compileSdk = (findProperty("android.compileSdk") as String).toInt()
-    namespace = "com.babytracker.common"
+    namespace = "com.babytracker"
 
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     sourceSets["main"].res.srcDirs("src/androidMain/res")

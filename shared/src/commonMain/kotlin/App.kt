@@ -6,6 +6,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.initialize
 
 @OptIn(
     ExperimentalMaterial3Api::class
@@ -15,6 +17,7 @@ fun App(
     viewModel: MainViewModel
 ) = AppTheme {
     val currentName by remember { viewModel.name }
+    val event by remember { derivedStateOf { viewModel.events.getOrElse(0) { "" } } }
     var selectedTabPosition by remember { mutableStateOf(0) }
     Scaffold(
         topBar = {
@@ -44,7 +47,7 @@ fun App(
     ) {
         Box(modifier = Modifier.fillMaxSize().padding(it)) {
             Text(
-                text = currentName,
+                text = event,
                 modifier = Modifier.align(Alignment.Center),
             )
         }

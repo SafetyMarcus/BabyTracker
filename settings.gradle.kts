@@ -23,6 +23,7 @@ pluginManagement {
         id("com.android.library").version(agpVersion)
 
         id("org.jetbrains.compose").version(composeVersion)
+        id("com.google.gms.google-services").version("4.3.15")
     }
 }
 
