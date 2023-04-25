@@ -3,20 +3,22 @@ import androidx.compose.runtime.mutableStateOf
 import com.rickclephas.kmm.viewmodel.KMMViewModel
 import com.rickclephas.kmm.viewmodel.coroutineScope
 import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.firestore.Timestamp
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 
 class MainViewModel: KMMViewModel() {
     val name = mutableStateOf("Sebastian")
 
-    val events = mutableStateListOf<String>()
+    val events = mutableStateListOf<Event>()
 
     init {
         viewModelScope.coroutineScope.launch {
             Firebase.firestore.collection("events").snapshots.collect {
                 events.clear()
                 events.addAll(it.documents.map { document ->
-                    document.get("event")
+                    document.data()
                 })
             }
         }
@@ -27,3 +29,10 @@ class MainViewModel: KMMViewModel() {
         else -> name.value = "Baby 2"
     }
 }
+
+@Serializable
+data class Event(
+    val child: String,
+    val event: String,
+    val time: Timestamp,
+)

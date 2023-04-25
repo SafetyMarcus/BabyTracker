@@ -1,5 +1,6 @@
 plugins {
     kotlin("multiplatform")
+    kotlin("plugin.serialization")
     kotlin("native.cocoapods")
     id("com.android.library")
     id("org.jetbrains.compose")
@@ -15,8 +16,8 @@ kotlin {
 
     cocoapods {
         version = "1.0.0"
-        summary = "Some description for the Shared Module"
-        homepage = "Link to the Shared Module homepage"
+        summary = "Shared application UI and business logic"
+        homepage = "Not a real homepage"
         ios.deploymentTarget = "14.1"
         podfile = project.file("../iosApp/Podfile")
         framework {
@@ -36,14 +37,15 @@ kotlin {
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.components.resources)
                 implementation("com.rickclephas.kmm:kmm-viewmodel-core:1.0.0-ALPHA-6")
+                implementation("dev.gitlive:firebase-common:1.8.1")
                 implementation("dev.gitlive:firebase-firestore:1.8.1")
             }
         }
         val androidMain by getting {
             dependencies {
-                api("androidx.activity:activity-compose:1.6.1")
+                api("androidx.activity:activity-compose:1.7.1")
                 api("androidx.appcompat:appcompat:1.6.1")
-                api("androidx.core:core-ktx:1.9.0")
+                api("androidx.core:core-ktx:1.10.0")
                 api("com.rickclephas.kmm:kmm-viewmodel-core:1.0.0-ALPHA-6")
                 api("dev.gitlive:firebase-firestore:1.8.1")
             }

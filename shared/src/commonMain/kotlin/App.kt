@@ -16,8 +16,7 @@ import dev.gitlive.firebase.initialize
 fun App(
     viewModel: MainViewModel
 ) = AppTheme {
-    val currentName by remember { viewModel.name }
-    val event by remember { derivedStateOf { viewModel.events.getOrElse(0) { "" } } }
+    val event by remember { derivedStateOf { viewModel.events.getOrNull(0) } }
     var selectedTabPosition by remember { mutableStateOf(0) }
     Scaffold(
         topBar = {
@@ -46,10 +45,12 @@ fun App(
         }
     ) {
         Box(modifier = Modifier.fillMaxSize().padding(it)) {
-            Text(
-                text = event,
-                modifier = Modifier.align(Alignment.Center),
-            )
+            event?.let {
+                Text(
+                    text = it.event,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            }
         }
     }
 }
