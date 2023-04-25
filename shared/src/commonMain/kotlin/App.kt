@@ -1,13 +1,9 @@
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import dev.gitlive.firebase.Firebase
-import dev.gitlive.firebase.initialize
+import androidx.compose.ui.unit.dp
 
 @OptIn(
     ExperimentalMaterial3Api::class
@@ -16,39 +12,44 @@ import dev.gitlive.firebase.initialize
 fun App(
     viewModel: MainViewModel
 ) = AppTheme {
-    val event by remember { derivedStateOf { viewModel.events.getOrNull(0) } }
     var selectedTabPosition by remember { mutableStateOf(0) }
+    val children = remember { viewModel.children }
+    val currentChild by remember(children) { derivedStateOf { children.getOrNull(selectedTabPosition) } }
+    val allEvents = remember { viewModel.events }
+    val currentTabEvents by remember(currentChild, allEvents) {
+        derivedStateOf {
+            allEvents.filter { it.child == currentChild?.id }
+        }
+    }
+
     Scaffold(
         topBar = {
-            TabRow(
+            if (children.isNotEmpty()) TabRow(
                 selectedTabIndex = selectedTabPosition,
                 modifier = Modifier.fillMaxWidth(),
                 divider = { Divider() },
             ) {
-                Tab(
-                    selected = selectedTabPosition == 0,
-                    onClick = {
-                        selectedTabPosition = 0
-                        viewModel.setCurrentTab(0)
-                    },
-                    text = { Text("Sebastian") }
-                )
-                Tab(
-                    selected = selectedTabPosition == 1,
-                    onClick = {
-                        selectedTabPosition = 1
-                        viewModel.setCurrentTab(1)
-                    },
-                    text = { Text("Baby 2") }
-                )
+                children.forEachIndexed { i, child ->
+                    Tab(
+                        selected = selectedTabPosition == i,
+                        onClick = { selectedTabPosition = i },
+                        text = { Text(child.firstName) }
+                    )
+                }
             }
         }
     ) {
-        Box(modifier = Modifier.fillMaxSize().padding(it)) {
-            event?.let {
+        if (currentTabEvents.isNotEmpty()) LazyColumn(
+            modifier = Modifier.padding(it).fillMaxSize(),
+            contentPadding = PaddingValues(16.dp)
+        ) {
+            items(
+                count = currentTabEvents.size
+            ) {
+                val event = currentTabEvents[it]
                 Text(
-                    text = it.event,
-                    modifier = Modifier.align(Alignment.Center),
+                    text = event.event,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
