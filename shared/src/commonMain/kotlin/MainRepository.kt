@@ -1,5 +1,4 @@
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.DocumentSnapshot
 import dev.gitlive.firebase.firestore.Timestamp
@@ -12,7 +11,7 @@ import kotlinx.serialization.Serializable
 object MainRepository {
 
     val children = mutableStateListOf<Child>()
-    val events = mutableStateListOf<Event>()
+    val events = mutableStateListOf<Rows>()
 
     suspend fun getChildren() = withContext(Dispatchers.Default) {
         Firebase.firestore
@@ -34,7 +33,27 @@ object MainRepository {
             .snapshots
             .collect {
                 events.clear()
-                events.addAll(it.documents.map { it.data() })
+                var day = ""
+                it.documents.forEach {
+                    val event = it.data<Event>()
+                    val eventDay = event.time.format("d MMMM")
+                    if (day != eventDay) {
+                        events.add(
+                            Rows.Day(
+                                label = eventDay,
+                                child = event.child
+                            )
+                        )
+                        day = eventDay
+                    }
+                    events.add(
+                        Rows.Event(
+                            label = event.eventDisplay,
+                            child = event.child,
+                            time = event.time.format("hh:mm")
+                        )
+                    )
+                }
             }
     }
 }
@@ -54,4 +73,36 @@ data class Event(
     val child: String,
     val event: String,
     val time: Timestamp,
-)
+) {
+    val eventDisplay
+        get() = EventType
+            .valueOf(event)
+            .display
+}
+
+sealed class Rows {
+    fun child() = when (this) {
+        is Day -> child
+        is Event -> child
+    }
+
+    data class Day(
+        val label: String,
+        val child: String,
+    ) : Rows()
+
+    data class Event(
+        val label: String,
+        val child: String,
+        val time: String,
+    ): Rows()
+}
+
+enum class EventType(
+    val display: String,
+) {
+    WET_NAPPY("Wet nappy"),
+    MIXED_NAPPY("Mixed nappy"),
+    SLEEP_START("Sleep start"),
+    SLEEP_END("Sleep end"),
+}

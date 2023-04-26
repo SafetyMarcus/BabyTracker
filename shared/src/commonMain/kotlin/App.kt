@@ -2,8 +2,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import dev.gitlive.firebase.firestore.Timestamp
 
 @OptIn(
     ExperimentalMaterial3Api::class
@@ -18,7 +20,7 @@ fun App(
     val allEvents = remember { viewModel.events }
     val currentTabEvents by remember(currentChild, allEvents) {
         derivedStateOf {
-            allEvents.filter { it.child == currentChild?.id }
+            allEvents.filter { it.child() == currentChild?.id }
         }
     }
 
@@ -41,19 +43,39 @@ fun App(
     ) {
         if (currentTabEvents.isNotEmpty()) LazyColumn(
             modifier = Modifier.padding(it).fillMaxSize(),
-            contentPadding = PaddingValues(16.dp)
+            contentPadding = PaddingValues(16.dp),
         ) {
             items(
                 count = currentTabEvents.size
             ) {
-                val event = currentTabEvents[it]
-                Text(
-                    text = event.event,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                when (val row = currentTabEvents[it]) {
+                    is Rows.Day -> Text(
+                        text = row.label,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    is Rows.Event -> Event(row)
+                }
             }
         }
     }
 }
 
+@Composable
+private fun Event(event: Rows.Event) = Row(
+    modifier = Modifier.fillMaxWidth(),
+    verticalAlignment = CenterVertically,
+) {
+    Text(
+        text = event.time,
+        style = MaterialTheme.typography.headlineSmall,
+    )
+    Spacer(Modifier.size(16.dp))
+    Text(
+        text = event.label,
+        style = MaterialTheme.typography.headlineLarge,
+    )
+}
+
 expect fun getPlatformName(): String
+
+expect fun Timestamp.format(format: String): String
