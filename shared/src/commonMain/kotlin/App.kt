@@ -1,13 +1,21 @@
+import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.BottomEnd
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import dev.gitlive.firebase.firestore.Timestamp
 
@@ -27,6 +35,7 @@ fun App(
             allEvents.filter { it.child() == currentChild?.id }
         }
     }
+    var showingOptions by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -34,14 +43,64 @@ fun App(
                 selectedTabPosition = it
             }
         },
-        floatingActionButton = {
-            FloatingActionButton({
-            }) {
-                Icon(Icons.Default.Add, null)
-            }
-        },
+    ) { EventsList(currentTabEvents, it) }
+    val bg by animateColorAsState(
+        if (showingOptions) Color.Black.copy(alpha = 0.3f)
+        else Color.Transparent
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(bg),
+        contentAlignment = BottomEnd,
     ) {
-        EventsList(currentTabEvents, it)
+        if (showingOptions) Box(
+            modifier = Modifier.fillMaxSize().clickable { showingOptions = false }
+        )
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalAlignment = Alignment.End,
+        ) {
+            AnimatedVisibility(
+                showingOptions,
+                enter = fadeIn(tween(delayMillis = 100)) + slideInVertically(
+                    tween(
+                        delayMillis = 100
+                    )
+                ) { it / 2 },
+                exit = slideOutVertically { it / 2 } + fadeOut()
+            ) {
+                ExtendedFloatingActionButton(
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    onClick = {
+                        showingOptions = false
+                        currentChild?.let { viewModel.addEvent(it, EventType.MIXED_NAPPY) }
+                    },
+                    content = { Text("Mixed nappy") }
+                )
+            }
+            AnimatedVisibility(
+                showingOptions,
+                enter = fadeIn() + slideInVertically { it / 2 },
+                exit = slideOutVertically { it / 2 } + fadeOut()
+            ) {
+                ExtendedFloatingActionButton(
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    onClick = {
+                        showingOptions = false
+                        currentChild?.let { viewModel.addEvent(it, EventType.WET_NAPPY) }
+                    },
+                    content = { Text("Wet nappy") }
+                )
+            }
+
+            val rotation by animateFloatAsState(if (showingOptions) 45f else 0f)
+            FloatingActionButton(
+                modifier = Modifier.rotate(rotation),
+                onClick = { showingOptions = !showingOptions },
+                content = { Icon(Icons.Default.Add, null) }
+            )
+        }
     }
 }
 
@@ -52,9 +111,7 @@ private fun Toolbar(
     selectedTabPosition: Int,
     onTabSelected: (Int) -> Unit,
 ) = Column {
-    CenterAlignedTopAppBar(
-        title = { Text("Events") },
-    )
+    CenterAlignedTopAppBar(title = { Text("Events") })
     if (children.isNotEmpty()) TabRow(
         selectedTabIndex = selectedTabPosition,
         modifier = Modifier.fillMaxWidth(),
@@ -88,6 +145,7 @@ private fun EventsList(
     ) {
         when (val row = currentTabEvents[it]) {
             is Rows.Day -> Text(
+                modifier = Modifier.padding(top = 16.dp),
                 text = row.label,
                 style = MaterialTheme.typography.bodyLarge,
             )
@@ -98,12 +156,12 @@ private fun EventsList(
 
 @Composable
 private fun Event(event: Rows.Event) = Row(
-    modifier = Modifier.fillMaxWidth(),
+    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
     verticalAlignment = CenterVertically,
 ) {
     Text(
         text = event.time,
-        style = MaterialTheme.typography.headlineSmall,
+        style = MaterialTheme.typography.titleLarge,
     )
     Spacer(Modifier.size(16.dp))
     Text(

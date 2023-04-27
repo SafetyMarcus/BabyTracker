@@ -13,7 +13,7 @@ object MainRepository {
     val children = mutableStateListOf<Child>()
     val events = mutableStateListOf<Rows>()
 
-    suspend fun getChildren() = withContext(Dispatchers.Default) {
+    suspend fun getChildren() {
         Firebase.firestore
             .collection("children")
             .snapshots
@@ -27,15 +27,17 @@ object MainRepository {
             }
     }
 
-    suspend fun getEvents() = withContext(Dispatchers.Default) {
+    suspend fun getEvents() {
         Firebase.firestore
             .collection("events")
             .snapshots
             .collect {
                 events.clear()
                 var day = ""
-                it.documents.forEach {
-                    val event = it.data<Event>()
+                it.documents
+                    .map { it.data<Event>() }
+                    .sortedBy { it.time.seconds }
+                    .forEach { event ->
                     val eventDay = event.time.format("d MMMM")
                     if (day != eventDay) {
                         events.add(
@@ -50,11 +52,26 @@ object MainRepository {
                         Rows.Event(
                             label = event.eventDisplay,
                             child = event.child,
-                            time = event.time.format("hh:mm")
+                            time = event.time.format("hh:mm a")
                         )
                     )
                 }
             }
+    }
+
+    suspend fun createEvent(
+        child: String,
+        eventType: EventType
+    ) {
+        Firebase.firestore
+            .collection("events")
+            .add(
+                Event(
+                    child = child,
+                    event = eventType.name.uppercase(),
+                    time = Timestamp.now()
+                )
+            )
     }
 }
 
@@ -76,7 +93,7 @@ data class Event(
 ) {
     val eventDisplay
         get() = EventType
-            .valueOf(event)
+            .valueOf(event.uppercase())
             .display
 }
 

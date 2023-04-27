@@ -15,4 +15,10 @@ class MainViewModel : KMMViewModel() {
             MainRepository.getEvents()
         }
     }
+
+    fun addEvent(child: Child, eventType: EventType) {
+        viewModelScope.coroutineScope.launch {
+            MainRepository.createEvent(child.id, eventType)
+        }
+    }
 }
