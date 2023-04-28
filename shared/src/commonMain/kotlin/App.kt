@@ -61,37 +61,20 @@ fun App(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalAlignment = Alignment.End,
         ) {
-            AnimatedVisibility(
-                showingOptions,
-                enter = fadeIn(tween(delayMillis = 100)) + slideInVertically(
-                    tween(
-                        delayMillis = 100
-                    )
-                ) { it / 2 },
-                exit = slideOutVertically { it / 2 } + fadeOut()
-            ) {
-                ExtendedFloatingActionButton(
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    onClick = {
-                        showingOptions = false
-                        currentChild?.let { viewModel.addEvent(it, EventType.MIXED_NAPPY) }
-                    },
-                    content = { Text("Mixed nappy") }
-                )
-            }
-            AnimatedVisibility(
-                showingOptions,
-                enter = fadeIn() + slideInVertically { it / 2 },
-                exit = slideOutVertically { it / 2 } + fadeOut()
-            ) {
-                ExtendedFloatingActionButton(
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    onClick = {
-                        showingOptions = false
-                        currentChild?.let { viewModel.addEvent(it, EventType.WET_NAPPY) }
-                    },
-                    content = { Text("Wet nappy") }
-                )
+            val values = EventType.values().reversed()
+            values.forEachIndexed { index, eventType ->
+                FabOption(
+                    visible = showingOptions,
+                    index = values.size - index,
+                    text = eventType
+                        .name
+                        .replace("_", " ")
+                        .lowercase()
+                        .replaceFirstChar { it.uppercase() }
+                ) {
+                    showingOptions = false
+                    currentChild?.let { viewModel.addEvent(it, eventType) }
+                }
             }
 
             val rotation by animateFloatAsState(if (showingOptions) 45f else 0f)
@@ -102,6 +85,28 @@ fun App(
             )
         }
     }
+}
+
+@Composable
+private fun FabOption(
+    visible: Boolean,
+    text: String,
+    index: Int,
+    onClick: () -> Unit
+) = AnimatedVisibility(
+    visible,
+    enter = fadeIn(
+        tween(delayMillis = 100 * index)
+    ) + slideInVertically(
+        tween(delayMillis = 100 * index)
+    ) { it / 2 },
+    exit = slideOutVertically { it / 2 } + fadeOut()
+) {
+    ExtendedFloatingActionButton(
+        modifier = Modifier.padding(bottom = 16.dp),
+        onClick = onClick,
+        content = { Text(text) }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

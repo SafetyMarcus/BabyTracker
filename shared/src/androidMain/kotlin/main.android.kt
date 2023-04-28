@@ -9,7 +9,7 @@ actual fun getPlatformName(): String = "Android"
 actual fun Timestamp.format(format: String) = SimpleDateFormat(
     /* pattern = */ format,
     /* locale = */ Locale.getDefault()
-).format(Date(this.toMilliseconds().toLong()))
+).format(Date(this.seconds * 1000))
 
 @Composable
 fun MainView(viewModel: MainViewModel) = App(viewModel)
