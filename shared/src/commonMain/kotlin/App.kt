@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -30,18 +31,24 @@ fun App(
     val children = remember { viewModel.children }
     val currentChild by remember(children) { derivedStateOf { children.getOrNull(selectedTabPosition) } }
     val allEvents = remember { viewModel.events }
+    val allSummaries = remember { viewModel.summaries }
+    var infoShowing by remember { mutableStateOf(false) }
     val currentTabEvents by remember(currentChild, allEvents) {
         derivedStateOf {
-            allEvents.filter { it.child() == currentChild?.id }
+            if (infoShowing) allSummaries.filter { it.child() == currentChild?.id }
+            else allEvents.filter { it.child() == currentChild?.id }
         }
     }
     var showingOptions by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            Toolbar(children, selectedTabPosition) {
-                selectedTabPosition = it
-            }
+            Toolbar(
+                children,
+                selectedTabPosition,
+                infoSelected = { infoShowing = !infoShowing },
+                onTabSelected = { selectedTabPosition = it }
+            )
         },
     ) { EventsList(currentTabEvents, it) }
     val bg by animateColorAsState(
@@ -115,8 +122,14 @@ private fun Toolbar(
     children: SnapshotStateList<Child>,
     selectedTabPosition: Int,
     onTabSelected: (Int) -> Unit,
+    infoSelected: () -> Unit,
 ) = Column {
-    CenterAlignedTopAppBar(title = { Text("Events") })
+    CenterAlignedTopAppBar(
+        title = { Text("Events") },
+        actions = {
+            IconButton(onClick = infoSelected) { Icon(Icons.Default.Info, null) }
+        }
+    )
     if (children.isNotEmpty()) TabRow(
         selectedTabIndex = selectedTabPosition,
         modifier = Modifier.fillMaxWidth(),
@@ -154,6 +167,13 @@ private fun EventsList(
                 text = row.label,
                 style = MaterialTheme.typography.bodyLarge,
             )
+
+            is Rows.Summary -> Text(
+                modifier = Modifier.padding(top = 16.dp),
+                text = row.text,
+                style = MaterialTheme.typography.titleLarge,
+            )
+
             is Rows.Event -> Event(row)
         }
     }

@@ -1,4 +1,3 @@
-import androidx.compose.runtime.mutableStateListOf
 import com.rickclephas.kmm.viewmodel.KMMViewModel
 import com.rickclephas.kmm.viewmodel.coroutineScope
 import kotlinx.coroutines.launch
@@ -6,6 +5,7 @@ import kotlinx.coroutines.launch
 class MainViewModel : KMMViewModel() {
     val children = MainRepository.children
     val events = MainRepository.events
+    val summaries = MainRepository.summaries
 
     init {
         viewModelScope.coroutineScope.launch {
