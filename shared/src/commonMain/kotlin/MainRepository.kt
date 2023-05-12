@@ -10,7 +10,7 @@ object MainRepository {
 
     val children = mutableStateListOf<Child>()
     val events = mutableStateListOf<Rows>()
-    val summaries = mutableStateListOf<Rows>()
+    val summaries = mutableStateListOf<Summary>()
 
     suspend fun getChildren() {
         Firebase.firestore
@@ -46,18 +46,23 @@ object MainRepository {
                                 child = event.child
                             )
                             events.add(dayRow)
-                            summaries.add(dayRow)
-                            summaries.add(Rows.Summary(event.child))
+                            summaries.add(
+                                Summary(
+                                    child = event.child,
+                                    day = eventDay,
+                                )
+                            )
                             day = eventDay
                         }
                         events.add(
                             Rows.Event(
                                 label = event.eventDisplay,
                                 child = event.child,
+                                day = eventDay,
                                 time = event.time.format("hh:mm a")
                             )
                         )
-                        (summaries.last() as? Rows.Summary)?.apply {
+                        summaries.last().apply {
                             when (event.type) {
                                 EventType.MIXED_NAPPY -> mixedNappyTotal++
                                 EventType.WET_NAPPY -> wetNappyTotal++
@@ -110,11 +115,20 @@ data class Event(
     val eventDisplay = type.display
 }
 
+data class Summary(
+    val child: String,
+    val day: String,
+) {
+    var wetNappyTotal: Float = 0f
+    var mixedNappyTotal: Float = 0f
+    var sleepTotal: Float = 0f
+    var sleepStartTemp: Timestamp? = null
+}
+
 sealed class Rows {
     fun child() = when (this) {
         is Day -> child
         is Event -> child
-        is Summary -> child
     }
 
     data class Day(
@@ -125,23 +139,9 @@ sealed class Rows {
     data class Event(
         val label: String,
         val child: String,
+        val day: String,
         val time: String,
     ) : Rows()
-
-    data class Summary(
-        val child: String,
-    ) : Rows() {
-        var wetNappyTotal: Float = 0f
-        var mixedNappyTotal: Float = 0f
-        var sleepTotal: Float = 0f
-        var sleepStartTemp: Timestamp? = null
-
-        val text get() = """
-            $wetNappyTotal wet ${if (wetNappyTotal > 1) "nappies" else "nappy" }
-            $wetNappyTotal mixed ${if (wetNappyTotal > 1) "nappies" else "nappy" }
-            Slept for ${sleepTotal / 60} hours
-        """.trimIndent()
-    }
 }
 
 enum class EventType(
