@@ -125,7 +125,9 @@ data class Summary(
     var sleepStartTemp: Timestamp? = null
 }
 
-sealed class Rows {
+sealed class Rows(
+    val id: String = randomUUID()
+) {
     fun child() = when (this) {
         is Day -> child
         is Event -> child

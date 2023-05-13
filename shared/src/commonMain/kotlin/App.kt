@@ -6,11 +6,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.BottomEnd
+import androidx.compose.ui.Alignment.Companion.Center
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -31,6 +34,7 @@ fun App(
     val allEvents = remember { viewModel.events }
     val allSummaries = remember { viewModel.summaries }
     var currentDay by remember { mutableStateOf("") }
+    var selectedCard by remember { mutableStateOf<String?>(null) }
     val currentSummary by remember {
         derivedStateOf {
             val day = currentDay.takeUnless { it.isEmpty() }
@@ -56,8 +60,14 @@ fun App(
         EventsList(
             it = it,
             selectedDay = currentDay,
+            selectedEvent = selectedCard,
             currentTabEvents = currentTabEvents,
-        ) { currentDay = (it as? Rows.Event)?.day ?: "" }
+        ) {
+            (it as? Rows.Event)?.let {
+                currentDay = it.day
+                selectedCard = it.id
+            }
+        }
     }
     val bg by animateColorAsState(
         if (showingOptions) Color.Black.copy(alpha = 0.3f)
@@ -102,7 +112,9 @@ fun App(
                 else MaterialTheme.colorScheme.onPrimaryContainer
             )
             FloatingActionButton(
-                modifier = Modifier.rotate(rotation),
+                modifier = Modifier
+                    .padding(bottom = 24.dp)
+                    .rotate(rotation),
                 containerColor = container,
                 contentColor = content,
                 onClick = { showingOptions = !showingOptions },
@@ -144,17 +156,17 @@ private fun SummaryDisplay(summary: Summary?) = Row(
 ) {
     Tracker(
         value = summary?.wetNappyTotal?.roundToInt()?.toString() ?: "0",
-        label = "Wet\nNappy",
+        label = "Wet\nNappies",
         color = MaterialTheme.colorScheme.primary,
     )
     Tracker(
         value = summary?.mixedNappyTotal?.roundToInt()?.toString() ?: "0",
-        label = "Mixed\nNappy",
+        label = "Mixed\nNappies",
         color = MaterialTheme.colorScheme.secondary,
     )
     Tracker(
         value = summary?.sleepTotal?.div(60f)?.roundToInt()?.toString() ?: "0",
-        label = "Hour\nAsleep",
+        label = "Hours\nAsleep",
         color = MaterialTheme.colorScheme.tertiary,
     )
 }
@@ -163,6 +175,7 @@ private fun SummaryDisplay(summary: Summary?) = Row(
 private fun EventsList(
     it: PaddingValues,
     selectedDay: String,
+    selectedEvent: String?,
     currentTabEvents: List<Rows>,
     onItemSelected: (Rows) -> Unit,
 ) = LazyColumn(
@@ -183,7 +196,10 @@ private fun EventsList(
                 selected = selectedDay == row.label,
             )
 
-            is Rows.Event -> Event(row) { onItemSelected(row) }
+            is Rows.Event -> Event(
+                event = row,
+                selected = selectedEvent == row.id,
+            ) { onItemSelected(row) }
         }
     }
 }
@@ -192,26 +208,60 @@ private fun EventsList(
 @Composable
 private fun Event(
     event: Rows.Event,
+    selected: Boolean,
     onClick: () -> Unit,
-) = ElevatedCard(
-    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-    onClick = onClick,
 ) {
-    Spacer(Modifier.size(16.dp))
-    Text(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        text = event.label,
-        style = MaterialTheme.typography.titleMedium,
+    val container by animateColorAsState(
+        if (selected) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surface
     )
-    Spacer(Modifier.size(4.dp))
-    Text(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        text = event.time,
-        style = MaterialTheme.typography.bodyMedium,
+    val content by animateColorAsState(
+        if (selected) MaterialTheme.colorScheme.onPrimaryContainer
+        else MaterialTheme.colorScheme.onSurface
     )
-    Spacer(Modifier.size(16.dp))
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = container,
+            contentColor = content,
+        ),
+        onClick = onClick,
+    ) {
+        Spacer(Modifier.size(16.dp))
+        Row {
+            Column {
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = event.label,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Spacer(Modifier.size(4.dp))
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = event.time,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            AnimatedVisibility(
+                modifier = Modifier.fillMaxHeight().align(CenterVertically),
+                visible = selected,
+                enter = fadeIn() + slideInHorizontally { it/2 },
+                exit = slideOutHorizontally { it/2 } + fadeOut(),
+            ) {
+                IconButton(
+                    modifier = Modifier.size(40.dp).padding(end = 16.dp),
+                    onClick = { /* TODO */ },
+                    content = { Icon(Icons.Filled.Edit, null) }
+                )
+            }
+        }
+        Spacer(Modifier.size(16.dp))
+    }
 }
 
 expect fun getPlatformName(): String
 
 expect fun Timestamp.format(format: String): String
+
+expect fun randomUUID(): String

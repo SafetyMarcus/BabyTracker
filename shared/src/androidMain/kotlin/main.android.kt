@@ -11,5 +11,7 @@ actual fun Timestamp.format(format: String) = SimpleDateFormat(
     /* locale = */ Locale.getDefault()
 ).format(Date(this.seconds * 1000))
 
+actual fun randomUUID(): String = UUID.randomUUID().toString()
+
 @Composable
 fun MainView(viewModel: MainViewModel) = App(viewModel)

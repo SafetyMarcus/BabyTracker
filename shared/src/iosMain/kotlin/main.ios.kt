@@ -14,4 +14,6 @@ actual fun Timestamp.format(format: String): String {
     )
 }
 
+actual fun randomUUID(): String = NSUUID().UUIDString
+
 fun MainViewController(viewModel: MainViewModel) = ComposeUIViewController { App(viewModel) }
