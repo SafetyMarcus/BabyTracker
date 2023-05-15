@@ -1,5 +1,6 @@
 import com.rickclephas.kmm.viewmodel.KMMViewModel
 import com.rickclephas.kmm.viewmodel.coroutineScope
+import dev.gitlive.firebase.firestore.Timestamp
 import kotlinx.coroutines.launch
 
 class MainViewModel : KMMViewModel() {
@@ -16,9 +17,18 @@ class MainViewModel : KMMViewModel() {
         }
     }
 
-    fun addEvent(child: Child, eventType: EventType) {
-        viewModelScope.coroutineScope.launch {
-            MainRepository.createEvent(child.id, eventType)
-        }
+    fun addEvent(
+        child: Child,
+        eventType: EventType,
+        time: Timestamp,
+    ) = viewModelScope.coroutineScope.launch {
+        MainRepository.createEvent(child = child.id, eventType = eventType, timestamp = time)
+    }
+
+    fun editEvent(
+        id: String,
+        time: Timestamp,
+    ) = viewModelScope.coroutineScope.launch {
+        MainRepository.updateEvent(id = id, time = time)
     }
 }

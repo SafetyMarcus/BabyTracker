@@ -59,7 +59,7 @@ object MainRepository {
                                 label = event.eventDisplay,
                                 child = event.child,
                                 day = eventDay,
-                                time = event.time.format("hh:mm a")
+                                timeStamp = event.time,
                             )
                         )
                         summaries.last().apply {
@@ -81,7 +81,8 @@ object MainRepository {
 
     suspend fun createEvent(
         child: String,
-        eventType: EventType
+        eventType: EventType,
+        timestamp: Timestamp,
     ) {
         Firebase.firestore
             .collection("events")
@@ -89,9 +90,19 @@ object MainRepository {
                 Event(
                     child = child,
                     event = eventType.name.uppercase(),
-                    time = Timestamp.now()
+                    time = timestamp,
                 )
             )
+    }
+
+    suspend fun updateEvent(
+        id: String,
+        time: Timestamp,
+    ) {
+        Firebase.firestore
+            .collection("events")
+            .document(id)
+            .set(mapOf("time" to time,))
     }
 }
 
@@ -142,8 +153,10 @@ sealed class Rows(
         val label: String,
         val child: String,
         val day: String,
-        val time: String,
-    ) : Rows()
+        val timeStamp: Timestamp,
+    ) : Rows() {
+        val time = timeStamp.format("hh:mm a")
+    }
 }
 
 enum class EventType(

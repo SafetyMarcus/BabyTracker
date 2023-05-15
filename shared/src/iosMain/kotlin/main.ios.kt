@@ -1,7 +1,9 @@
 import androidx.compose.ui.window.ComposeUIViewController
 import dev.gitlive.firebase.firestore.Timestamp
-import dev.gitlive.firebase.firestore.toMilliseconds
-import platform.Foundation.*
+import platform.Foundation.NSDate
+import platform.Foundation.NSDateFormatter
+import platform.Foundation.NSDateFormatterMediumStyle
+import platform.Foundation.NSUUID
 
 actual fun getPlatformName(): String = "iOS"
 
@@ -16,4 +18,12 @@ actual fun Timestamp.format(format: String): String {
 
 actual fun randomUUID(): String = NSUUID().UUIDString
 
-fun MainViewController(viewModel: MainViewModel) = ComposeUIViewController { App(viewModel) }
+fun MainViewController(
+    viewModel: MainViewModel,
+    showTimePicker: (Child, EventType) -> Unit = { _, _ -> },
+) = ComposeUIViewController {
+    App(
+        viewModel = viewModel,
+        showTimePicker = showTimePicker,
+    )
+}

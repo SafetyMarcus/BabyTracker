@@ -1,3 +1,4 @@
+import android.app.TimePickerDialog
 import androidx.compose.runtime.Composable
 import dev.gitlive.firebase.firestore.Timestamp
 import dev.gitlive.firebase.firestore.toMilliseconds
@@ -14,4 +15,8 @@ actual fun Timestamp.format(format: String) = SimpleDateFormat(
 actual fun randomUUID(): String = UUID.randomUUID().toString()
 
 @Composable
-fun MainView(viewModel: MainViewModel) = App(viewModel)
+fun MainView(
+    viewModel: MainViewModel,
+    showTimePicker: (Child, EventType) -> Unit = { _, _ -> },
+    editEvent: (String, Timestamp) -> Unit = { _, _ -> },
+) = App(viewModel, showTimePicker, editEvent)

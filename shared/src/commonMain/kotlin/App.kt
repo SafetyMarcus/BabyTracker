@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.BottomEnd
-import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -26,7 +25,9 @@ import kotlin.math.roundToInt
 )
 @Composable
 fun App(
-    viewModel: MainViewModel
+    viewModel: MainViewModel,
+    showTimePicker: (Child, EventType) -> Unit = { _, _ -> },
+    editEvent: (String, Timestamp) -> Unit = { _, _ -> },
 ) = AppTheme {
     var selectedTabPosition by remember { mutableStateOf(0) }
     val children = remember { viewModel.children }
@@ -62,12 +63,14 @@ fun App(
             selectedDay = currentDay,
             selectedEvent = selectedCard,
             currentTabEvents = currentTabEvents,
-        ) {
-            (it as? Rows.Event)?.let {
-                currentDay = it.day
-                selectedCard = it.id
-            }
-        }
+            onItemSelected = {
+                (it as? Rows.Event)?.let {
+                    currentDay = it.day
+                    selectedCard = it.id
+                }
+            },
+            onItemEdited = { editEvent(it.id, it.timeStamp) }
+        )
     }
     val bg by animateColorAsState(
         if (showingOptions) Color.Black.copy(alpha = 0.3f)
@@ -98,7 +101,7 @@ fun App(
                         .replaceFirstChar { it.uppercase() }
                 ) {
                     showingOptions = false
-                    currentChild?.let { viewModel.addEvent(it, eventType) }
+                    currentChild?.let { showTimePicker(it, eventType) }
                 }
             }
 
@@ -178,6 +181,7 @@ private fun EventsList(
     selectedEvent: String?,
     currentTabEvents: List<Rows>,
     onItemSelected: (Rows) -> Unit,
+    onItemEdited: (Rows.Event) -> Unit,
 ) = LazyColumn(
     modifier = Modifier.padding(it).fillMaxSize(),
     contentPadding = PaddingValues(
@@ -199,7 +203,9 @@ private fun EventsList(
             is Rows.Event -> Event(
                 event = row,
                 selected = selectedEvent == row.id,
-            ) { onItemSelected(row) }
+                onClick = { onItemSelected(row) },
+                onEdit = onItemEdited,
+            )
         }
     }
 }
@@ -210,6 +216,7 @@ private fun Event(
     event: Rows.Event,
     selected: Boolean,
     onClick: () -> Unit,
+    onEdit: (Rows.Event) -> Unit,
 ) {
     val container by animateColorAsState(
         if (selected) MaterialTheme.colorScheme.primaryContainer
@@ -246,12 +253,12 @@ private fun Event(
             AnimatedVisibility(
                 modifier = Modifier.fillMaxHeight().align(CenterVertically),
                 visible = selected,
-                enter = fadeIn() + slideInHorizontally { it/2 },
-                exit = slideOutHorizontally { it/2 } + fadeOut(),
+                enter = fadeIn() + slideInHorizontally { it / 2 },
+                exit = slideOutHorizontally { it / 2 } + fadeOut(),
             ) {
                 IconButton(
                     modifier = Modifier.size(40.dp).padding(end = 16.dp),
-                    onClick = { /* TODO */ },
+                    onClick = { onEdit(event) },
                     content = { Icon(Icons.Filled.Edit, null) }
                 )
             }
