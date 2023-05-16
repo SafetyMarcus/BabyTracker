@@ -3,7 +3,6 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.DocumentSnapshot
 import dev.gitlive.firebase.firestore.Timestamp
 import dev.gitlive.firebase.firestore.firestore
-import dev.gitlive.firebase.firestore.where
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -72,7 +71,7 @@ object MainRepository {
                                 EventType.SLEEP_START -> sleepStartTemp = event.time
                                 EventType.SLEEP_END -> {
                                     sleepStartTemp?.let {
-                                        sleepTotal += event.time.seconds - it.seconds
+                                        sleepTotalSeconds += event.time.seconds - it.seconds
                                     }
                                     sleepStartTemp = null
                                 }
@@ -134,7 +133,7 @@ data class Summary(
 ) {
     var wetNappyTotal: Float = 0f
     var mixedNappyTotal: Float = 0f
-    var sleepTotal: Float = 0f
+    var sleepTotalSeconds: Float = 0f
     var sleepStartTemp: Timestamp? = null
 }
 

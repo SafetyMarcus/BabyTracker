@@ -168,7 +168,7 @@ private fun SummaryDisplay(summary: Summary?) = Row(
         color = MaterialTheme.colorScheme.secondary,
     )
     Tracker(
-        value = summary?.sleepTotal?.div(60f)?.roundToInt()?.toString() ?: "0",
+        value = summary?.sleepTotalSeconds?.roundToInt()?.div(3600)?.toString() ?: "0",
         label = "Hours\nAsleep",
         color = MaterialTheme.colorScheme.tertiary,
     )
