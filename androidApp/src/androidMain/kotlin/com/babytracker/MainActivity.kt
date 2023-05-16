@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity() {
                         currentEvent = id
                         currentTime = time
                         current = null
+                        showing.value = true
                     }
                 )
                 TimePickerAlert(

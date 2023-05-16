@@ -3,6 +3,7 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.DocumentSnapshot
 import dev.gitlive.firebase.firestore.Timestamp
 import dev.gitlive.firebase.firestore.firestore
+import dev.gitlive.firebase.firestore.where
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -36,7 +37,7 @@ object MainRepository {
 
                 var day = ""
                 it.documents
-                    .map { it.data<Event>() }
+                    .map { it.data<Event>().apply { id = it.id } }
                     .sortedBy { it.time.seconds }
                     .forEach { event ->
                         val eventDay = event.time.format("d MMMM")
@@ -54,16 +55,18 @@ object MainRepository {
                             )
                             day = eventDay
                         }
+                        val type = EventType.valueOf(event.event)
                         events.add(
                             Rows.Event(
-                                label = event.eventDisplay,
+                                _id = event.id,
+                                label = type.display,
                                 child = event.child,
                                 day = eventDay,
                                 timeStamp = event.time,
                             )
                         )
                         summaries.last().apply {
-                            when (event.type) {
+                            when (type) {
                                 EventType.MIXED_NAPPY -> mixedNappyTotal++
                                 EventType.WET_NAPPY -> wetNappyTotal++
                                 EventType.SLEEP_START -> sleepStartTemp = event.time
@@ -102,7 +105,7 @@ object MainRepository {
         Firebase.firestore
             .collection("events")
             .document(id)
-            .set(mapOf("time" to time,))
+            .update(mapOf("time" to time,))
     }
 }
 
@@ -122,8 +125,7 @@ data class Event(
     val event: String,
     var time: Timestamp,
 ) {
-    val type = EventType.valueOf(event.uppercase())
-    val eventDisplay = type.display
+    var id: String = ""
 }
 
 data class Summary(
@@ -137,7 +139,7 @@ data class Summary(
 }
 
 sealed class Rows(
-    val id: String = randomUUID()
+    val id: String,
 ) {
     fun child() = when (this) {
         is Day -> child
@@ -147,14 +149,15 @@ sealed class Rows(
     data class Day(
         val label: String,
         val child: String,
-    ) : Rows()
+    ) : Rows(id = randomUUID())
 
     data class Event(
+        private val _id: String,
         val label: String,
         val child: String,
         val day: String,
         val timeStamp: Timestamp,
-    ) : Rows() {
+    ) : Rows(id = _id) {
         val time = timeStamp.format("hh:mm a")
     }
 }
