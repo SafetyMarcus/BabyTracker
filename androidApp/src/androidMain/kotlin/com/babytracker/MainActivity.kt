@@ -122,7 +122,7 @@ class MainActivity : AppCompatActivity() {
     ) {
         val calendar by remember {
             derivedStateOf {
-                Calendar.getInstance().apply { timeInMillis = current.toMilliseconds().toLong() }
+                Calendar.getInstance().apply { timeInMillis = current.seconds * 1000 }
             }
         }
         val timePickerState = rememberTimePickerState(
@@ -133,11 +133,9 @@ class MainActivity : AppCompatActivity() {
         DialogButtons(
             onCancelClicked = { showing.value = false },
             onDoneClicked = {
-                val cal = Calendar.getInstance().apply {
-                    set(Calendar.HOUR_OF_DAY, timePickerState.hour)
-                    set(Calendar.MINUTE, timePickerState.minute)
-                }
-                onSet(Timestamp.fromMilliseconds(cal.timeInMillis.toDouble()))
+                calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                calendar.set(Calendar.MINUTE, timePickerState.minute)
+                onSet(Timestamp.fromMilliseconds(calendar.timeInMillis.toDouble()))
                 showing.value = false
             },
         )
