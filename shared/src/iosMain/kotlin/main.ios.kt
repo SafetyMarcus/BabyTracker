@@ -21,9 +21,11 @@ actual fun randomUUID(): String = NSUUID().UUIDString
 fun MainViewController(
     viewModel: MainViewModel,
     showTimePicker: (Child, EventType) -> Unit = { _, _ -> },
+    editEvent: (String, Timestamp) -> Unit = { _, _ -> },
 ) = ComposeUIViewController {
     App(
         viewModel = viewModel,
         showTimePicker = showTimePicker,
+        editEvent = editEvent,
     )
 }
