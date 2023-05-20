@@ -7,6 +7,7 @@ class MainViewModel : KMMViewModel() {
     val children = MainRepository.children
     val events = MainRepository.events
     val summaries = MainRepository.summaries
+    val eventTypes = MainRepository.eventTypes
 
     init {
         viewModelScope.coroutineScope.launch {
@@ -14,6 +15,9 @@ class MainViewModel : KMMViewModel() {
         }
         viewModelScope.coroutineScope.launch {
             MainRepository.getEvents()
+        }
+        viewModelScope.coroutineScope.launch {
+            MainRepository.getEventTypes()
         }
     }
 

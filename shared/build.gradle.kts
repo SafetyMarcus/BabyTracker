@@ -39,6 +39,7 @@ kotlin {
                 implementation("com.rickclephas.kmm:kmm-viewmodel-core:1.0.0-ALPHA-6")
                 implementation("dev.gitlive:firebase-common:1.8.1")
                 implementation("dev.gitlive:firebase-firestore:1.8.1")
+                api("io.github.qdsfdhvh:image-loader:1.4.2")
             }
         }
         val androidMain by getting {

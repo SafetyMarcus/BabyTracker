@@ -10,6 +10,7 @@ object MainRepository {
 
     val children = mutableStateListOf<Child>()
     val events = mutableStateListOf<Rows>()
+    val eventTypes = mutableStateListOf<EventTypes>()
     val summaries = mutableStateListOf<Summary>()
 
     suspend fun getChildren() {
@@ -75,9 +76,24 @@ object MainRepository {
                                     }
                                     sleepStartTemp = null
                                 }
+                                EventType.LEFT_FEED, EventType.RIGHT_FEED -> feedsTotal++
                             }
                         }
                     }
+            }
+    }
+
+    suspend fun getEventTypes() {
+        Firebase.firestore
+            .collection("event_types")
+            .snapshots
+            .collect {
+                eventTypes.clear()
+                eventTypes.addAll(
+                    it.documents
+                        .map { it.data<EventTypes>().apply { id = it.id } }
+                        .sortedBy { it.position }
+                )
             }
     }
 
@@ -127,10 +143,20 @@ data class Event(
     var id: String = ""
 }
 
+@Serializable
+data class EventTypes(
+    val image: String,
+    val label: String,
+    val position: Int,
+) {
+    var id: String = ""
+}
+
 data class Summary(
     val child: String,
     val day: String,
 ) {
+    var feedsTotal: Float = 0f
     var wetNappyTotal: Float = 0f
     var mixedNappyTotal: Float = 0f
     var sleepTotalSeconds: Float = 0f
@@ -168,4 +194,6 @@ enum class EventType(
     MIXED_NAPPY("Mixed nappy"),
     SLEEP_START("Sleep start"),
     SLEEP_END("Sleep end"),
+    LEFT_FEED("Left feed"),
+    RIGHT_FEED("Right feed"),
 }

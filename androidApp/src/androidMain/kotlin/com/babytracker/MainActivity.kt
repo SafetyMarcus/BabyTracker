@@ -40,7 +40,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.view.WindowCompat
 import dev.gitlive.firebase.firestore.Timestamp
 import dev.gitlive.firebase.firestore.fromMilliseconds
-import dev.gitlive.firebase.firestore.toMilliseconds
 import java.util.Calendar
 
 class MainActivity : AppCompatActivity() {
@@ -58,6 +57,7 @@ class MainActivity : AppCompatActivity() {
                 var current by remember { mutableStateOf<Pair<Child, EventType>?>(null) }
                 MainView(
                     viewModel = viewModel,
+                    context = this,
                     showTimePicker = { child, type ->
                         currentTime = Timestamp.now()
                         current = child to type

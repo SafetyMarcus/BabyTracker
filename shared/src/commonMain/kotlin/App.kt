@@ -1,22 +1,26 @@
 import androidx.compose.animation.*
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.BottomEnd
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.seiko.imageloader.ImageLoader
+import com.seiko.imageloader.LocalImageLoader
+import com.seiko.imageloader.model.ImageRequest
+import com.seiko.imageloader.rememberAsyncImagePainter
 import dev.gitlive.firebase.firestore.Timestamp
 import kotlin.math.roundToInt
 
@@ -32,6 +36,7 @@ fun App(
     var selectedTabPosition by remember { mutableStateOf(0) }
     val children = remember { viewModel.children }
     val currentChild by remember(children) { derivedStateOf { children.getOrNull(selectedTabPosition) } }
+    val eventTypes = remember { viewModel.eventTypes }
     val allEvents = remember { viewModel.events }
     val allSummaries = remember { viewModel.summaries }
     var currentDay by remember { mutableStateOf("") }
@@ -57,6 +62,12 @@ fun App(
                 onTabSelected = { selectedTabPosition = it }
             )
         },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showingOptions = !showingOptions },
+                content = { Icon(Icons.Default.Add, null) }
+            )
+        }
     ) {
         EventsList(
             it = it,
@@ -72,58 +83,19 @@ fun App(
             onItemEdited = { editEvent(it.id, it.timeStamp) }
         )
     }
-    val bg by animateColorAsState(
-        if (showingOptions) Color.Black.copy(alpha = 0.3f)
-        else Color.Transparent
-    )
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(bg),
-        contentAlignment = BottomEnd,
+    AnimatedVisibility(
+        visible = showingOptions,
+        enter = fadeIn() + slideInVertically { it },
+        exit = fadeOut() + slideOutVertically { it },
     ) {
-        if (showingOptions) Box(
-            modifier = Modifier.fillMaxSize().clickable { showingOptions = false }
-        )
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalAlignment = Alignment.End,
-        ) {
-            val values = EventType.values().reversed()
-            values.forEachIndexed { index, eventType ->
-                FabOption(
-                    visible = showingOptions,
-                    index = values.size - index,
-                    text = eventType
-                        .name
-                        .replace("_", " ")
-                        .lowercase()
-                        .replaceFirstChar { it.uppercase() }
-                ) {
-                    showingOptions = false
-                    currentChild?.let { showTimePicker(it, eventType) }
-                }
+        EventPicker(
+            eventTypes = eventTypes,
+            close = { showingOptions = false },
+            onTypeSelected = { eventType ->
+                showTimePicker(currentChild!!, eventType)
+                showingOptions = false
             }
-
-            val rotation by animateFloatAsState(if (showingOptions) 45f else 0f)
-            val container by animateColorAsState(
-                if (showingOptions) MaterialTheme.colorScheme.secondaryContainer
-                else MaterialTheme.colorScheme.primaryContainer
-            )
-            val content by animateColorAsState(
-                if (showingOptions) MaterialTheme.colorScheme.onSecondaryContainer
-                else MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            FloatingActionButton(
-                modifier = Modifier
-                    .padding(bottom = 24.dp)
-                    .rotate(rotation),
-                containerColor = container,
-                contentColor = content,
-                onClick = { showingOptions = !showingOptions },
-                content = { Icon(Icons.Default.Add, null) }
-            )
-        }
+        )
     }
 }
 
@@ -267,8 +239,85 @@ private fun Event(
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+private fun EventPicker(
+    eventTypes: List<EventTypes>,
+    onTypeSelected: (EventType) -> Unit,
+    close: () -> Unit,
+) = ElevatedCard(
+    modifier = Modifier.fillMaxSize(),
+    shape = RectangleShape,
+    elevation = CardDefaults.elevatedCardElevation(6.dp),
+) {
+    Column(
+        Modifier.padding(24.dp)
+    ) {
+        IconButton(onClick = close) {
+            Icon(
+                Icons.Filled.Close,
+                null
+            )
+        }
+        Spacer(modifier = Modifier.size(16.dp))
+        EventGrid(eventTypes, onTypeSelected, close)
+    }
+}
+
+@Composable
+private fun EventGrid(
+    eventTypes: List<EventTypes>,
+    onTypeSelected: (EventType) -> Unit,
+    close: () -> Unit
+) = LazyVerticalGrid(
+    modifier = Modifier.fillMaxSize(),
+    columns = GridCells.Fixed(2),
+    contentPadding = PaddingValues(16.dp),
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    verticalArrangement = Arrangement.spacedBy(8.dp),
+) {
+    items(
+        count = eventTypes.size,
+    ) {
+        val event = eventTypes[it]
+        OutlinedButton(
+            modifier = Modifier.fillMaxSize(),
+            shape = RoundedCornerShape(16.dp),
+            onClick = {
+                onTypeSelected(EventType.valueOf(event.id))
+            }
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                CompositionLocalProvider(
+                    LocalImageLoader provides generateImageLoader()
+                ) {
+                    Icon(
+                        painter = rememberAsyncImagePainter(
+                            ImageRequest { data(event.image) }
+                        ),
+                        tint = Color.Unspecified,
+                        contentDescription = null,
+                    )
+                    Text(
+                        modifier = Modifier.fillMaxWidth().padding(
+                            start = 8.dp,
+                            end = 8.dp,
+                            bottom = 24.dp,
+                        ),
+                        text = event.label,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+            }
+        }
+    }
+}
+
 expect fun getPlatformName(): String
 
 expect fun Timestamp.format(format: String): String
 
 expect fun randomUUID(): String
+
+expect fun generateImageLoader(): ImageLoader
