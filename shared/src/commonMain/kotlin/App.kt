@@ -1,8 +1,10 @@
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -39,19 +41,29 @@ fun App(
     val eventTypes = remember { viewModel.eventTypes }
     val allEvents = remember { viewModel.events }
     val allSummaries = remember { viewModel.summaries }
-    var currentDay by remember { mutableStateOf("") }
-    var selectedCard by remember { mutableStateOf<String?>(null) }
+    var selectedCard by remember { mutableStateOf<Rows.Event?>(null) }
+    val currentDay by remember { derivedStateOf { selectedCard?.day } }
     val currentSummary by remember {
         derivedStateOf {
-            val day = currentDay.takeUnless { it.isEmpty() }
-                ?: allEvents.filterIsInstance<Rows.Day>().lastOrNull()?.label
-            day?.let { safeDay -> allSummaries.firstOrNull { it.day == safeDay } }
+            val day = currentDay
+                ?: allEvents
+                    .filterIsInstance<Rows.Day>()
+                    .lastOrNull { it.child == currentChild?.id }
+                    ?.label
+
+            day?.let { safeDay -> allSummaries.firstOrNull {
+                it.day == safeDay && it.child == currentChild?.id }
+            }
         }
     }
     val currentTabEvents by remember(currentChild, allEvents) {
         derivedStateOf { allEvents.filter { it.child() == currentChild?.id } }
     }
     var showingOptions by remember { mutableStateOf(false) }
+
+    val listState = rememberLazyListState()
+    val firstEvent by remember { derivedStateOf { currentTabEvents.firstOrNull() }}
+    LaunchedEffect(firstEvent?.id) { listState.animateScrollToItem(0) }
 
     Scaffold(
         topBar = {
@@ -71,14 +83,12 @@ fun App(
     ) {
         EventsList(
             it = it,
-            selectedDay = currentDay,
-            selectedEvent = selectedCard,
+            state = listState,
+            selectedDay = currentDay ?: "",
+            selectedEvent = selectedCard?.id,
             currentTabEvents = currentTabEvents,
             onItemSelected = {
-                (it as? Rows.Event)?.let {
-                    currentDay = it.day
-                    selectedCard = it.id
-                }
+                (it as? Rows.Event)?.let { selectedCard = it }
             },
             onItemEdited = { editEvent(it.id, it.timeStamp) }
         )
@@ -142,20 +152,28 @@ private fun SummaryDisplay(summary: Summary?) = Row(
     Tracker(
         value = summary?.sleepTotalSeconds?.roundToInt()?.div(3600)?.toString() ?: "0",
         label = "Hours\nAsleep",
-        color = MaterialTheme.colorScheme.tertiary,
+        color = MaterialTheme.colorScheme.primary,
+    )
+    Tracker(
+        value = summary?.feedsTotal?.roundToInt()?.toString() ?: "0",
+        label = "Total/Feeds",
+        color = MaterialTheme.colorScheme.secondary,
     )
 }
 
 @Composable
 private fun EventsList(
     it: PaddingValues,
+    state: LazyListState,
     selectedDay: String,
     selectedEvent: String?,
     currentTabEvents: List<Rows>,
     onItemSelected: (Rows) -> Unit,
     onItemEdited: (Rows.Event) -> Unit,
 ) = LazyColumn(
-    modifier = Modifier.padding(it).fillMaxSize(),
+    modifier = Modifier.padding(it).fillMaxWidth(),
+    state = state,
+    reverseLayout = true,
     contentPadding = PaddingValues(
         top = 16.dp,
         start = 16.dp,
@@ -239,7 +257,6 @@ private fun Event(
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun EventPicker(
     eventTypes: List<EventTypes>,
@@ -260,7 +277,7 @@ private fun EventPicker(
             )
         }
         Spacer(modifier = Modifier.size(16.dp))
-        EventGrid(eventTypes, onTypeSelected, close)
+        EventGrid(eventTypes, onTypeSelected)
     }
 }
 
@@ -268,7 +285,6 @@ private fun EventPicker(
 private fun EventGrid(
     eventTypes: List<EventTypes>,
     onTypeSelected: (EventType) -> Unit,
-    close: () -> Unit
 ) = LazyVerticalGrid(
     modifier = Modifier.fillMaxSize(),
     columns = GridCells.Fixed(2),
@@ -286,31 +302,32 @@ private fun EventGrid(
             onClick = {
                 onTypeSelected(EventType.valueOf(event.id))
             }
-        ) {
-            Column(Modifier.fillMaxSize()) {
-                CompositionLocalProvider(
-                    LocalImageLoader provides generateImageLoader()
-                ) {
-                    Icon(
-                        painter = rememberAsyncImagePainter(
-                            ImageRequest { data(event.image) }
-                        ),
-                        tint = Color.Unspecified,
-                        contentDescription = null,
-                    )
-                    Text(
-                        modifier = Modifier.fillMaxWidth().padding(
-                            start = 8.dp,
-                            end = 8.dp,
-                            bottom = 24.dp,
-                        ),
-                        text = event.label,
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                }
-            }
-        }
+        ) { EventButton(event) }
+    }
+}
+
+@Composable
+private fun EventButton(event: EventTypes) = Column(Modifier.fillMaxSize()) {
+    CompositionLocalProvider(
+        LocalImageLoader provides generateImageLoader()
+    ) {
+        Icon(
+            painter = rememberAsyncImagePainter(
+                ImageRequest { data(event.image) }
+            ),
+            tint = Color.Unspecified,
+            contentDescription = null,
+        )
+        Text(
+            modifier = Modifier.fillMaxWidth().padding(
+                start = 8.dp,
+                end = 8.dp,
+                bottom = 24.dp,
+            ),
+            text = event.label,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.titleMedium,
+        )
     }
 }
 

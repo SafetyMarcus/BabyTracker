@@ -32,40 +32,38 @@ object MainRepository {
             .collection("events")
             .snapshots
             .collect {
-                events.clear()
-                summaries.clear()
-
-                var day = ""
+                val updatedEvents = ArrayList<Rows>()
+                val updatedSummaries = ArrayList<Summary>()
+                var day = Rows.Day("", "")
                 it.documents
                     .map { it.data<Event>().apply { id = it.id } }
                     .sortedBy { it.time.seconds }
                     .forEach { event ->
-                        val eventDay = event.time.format("d MMMM")
-                        if (day != eventDay) {
-                            val dayRow = Rows.Day(
-                                label = eventDay,
-                                child = event.child
-                            )
-                            events.add(dayRow)
-                            summaries.add(
+                        val dayRow = Rows.Day(
+                            label = event.time.format("d MMMM"),
+                            child = event.child
+                        )
+                        if (day != dayRow) {
+                            updatedEvents.add(dayRow)
+                            updatedSummaries.add(
                                 Summary(
                                     child = event.child,
-                                    day = eventDay,
+                                    day = dayRow.label,
                                 )
                             )
-                            day = eventDay
+                            day = dayRow
                         }
                         val type = EventType.valueOf(event.event)
-                        events.add(
+                        updatedEvents.add(
                             Rows.Event(
                                 _id = event.id,
                                 label = type.display,
                                 child = event.child,
-                                day = eventDay,
+                                day = dayRow.label,
                                 timeStamp = event.time,
                             )
                         )
-                        summaries.last().apply {
+                        updatedSummaries.lastOrNull { it.child == event.child }?.apply {
                             when (type) {
                                 EventType.MIXED_NAPPY -> mixedNappyTotal++
                                 EventType.WET_NAPPY -> wetNappyTotal++
@@ -80,6 +78,10 @@ object MainRepository {
                             }
                         }
                     }
+                events.clear()
+                events.addAll(updatedEvents.reversed())
+                summaries.clear()
+                summaries.addAll(updatedSummaries)
             }
     }
 
