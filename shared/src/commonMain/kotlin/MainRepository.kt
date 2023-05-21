@@ -39,14 +39,14 @@ object MainRepository {
         .collect {
             val updatedEvents = ArrayList<Rows>()
             val updatedSummaries = ArrayList<Summary>()
-            var day = Rows.Day("", "")
+            val days = arrayListOf<Rows.Day>()
             it.documents
                 .map { it.data<Event>().apply { id = it.id } }
                 .sortedBy { it.time.seconds }
                 .forEach { event ->
-                    day = processEvent(
+                    processEvent(
                         event = event,
-                        currentDay = day,
+                        days = days,
                         updatedEvents = updatedEvents,
                         updatedSummaries = updatedSummaries
                     )
@@ -59,16 +59,16 @@ object MainRepository {
 
     private fun processEvent(
         event: Event,
-        currentDay: Rows.Day,
+        days: MutableList<Rows.Day>,
         updatedEvents: ArrayList<Rows>,
         updatedSummaries: ArrayList<Summary>
-    ): Rows.Day {
-        var returnDay = currentDay
+    ) {
         val dayRow = Rows.Day(
             label = event.time.format("d MMMM"),
             child = event.child
         )
-        if (currentDay != dayRow) {
+        if (!days.contains(dayRow)) {
+            days.add(dayRow)
             updatedEvents.add(dayRow)
             updatedSummaries.add(
                 Summary(
@@ -76,7 +76,6 @@ object MainRepository {
                     day = dayRow.label,
                 )
             )
-            returnDay = dayRow
         }
         val type = EventType.valueOf(event.event)
         updatedEvents.add(
@@ -88,7 +87,9 @@ object MainRepository {
                 timeStamp = event.time,
             )
         )
-        updatedSummaries.lastOrNull { it.child == event.child }?.apply {
+        updatedSummaries.lastOrNull {
+            it.child == event.child && it.day == dayRow.label
+        }?.apply {
             when (type) {
                 EventType.MIXED_NAPPY -> mixedNappyTotal++
                 EventType.WET_NAPPY -> wetNappyTotal++
@@ -103,7 +104,6 @@ object MainRepository {
                 EventType.LEFT_FEED, EventType.RIGHT_FEED -> feedsTotal++
             }
         }
-        return returnDay
     }
 
     suspend fun getEventTypes() = Firebase.firestore
