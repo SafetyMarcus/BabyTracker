@@ -35,4 +35,10 @@ class MainViewModel : KMMViewModel() {
     ) = viewModelScope.coroutineScope.launch {
         MainRepository.updateEvent(id = id, time = time)
     }
+
+    fun deleteEvent(
+        id: String
+    ) = viewModelScope.coroutineScope.launch {
+        MainRepository.deleteEvent(id = id)
+    }
 }

@@ -17,9 +17,13 @@ struct ComposeView: UIViewControllerRepresentable {
             viewModel: viewModel,
             showTimePicker: { Child, EventType in
                 showPicker.show(child: Child, type: EventType)
-            }) { String, Firebase_firestoreTimestamp in
+            },
+            editEvent: { String, Firebase_firestoreTimestamp in
                 showPicker.edit(id: String, timestamp: Firebase_firestoreTimestamp)
-            }
+            },
+            deleteEvent: { String in
+                showPicker.delete(id: String)
+            })
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
@@ -28,6 +32,7 @@ struct ComposeView: UIViewControllerRepresentable {
 protocol ShowDatePicker {
     func show(child: Child, type: EventType)
     func edit(id: String, timestamp: Firebase_firestoreTimestamp)
+    func delete(id: String)
     func getViewModel() -> MainViewModel
 }
 
@@ -38,6 +43,8 @@ struct ContentView: View, ShowDatePicker {
     @State var child: Child? = nil
     @State var type: EventType? = nil
     @State var id: String? = nil
+    @State var showingAlert: Bool = false
+    @State var deleteEvent: String? = nil
     
     @StateViewModel var model = MainViewModel()
     
@@ -52,6 +59,11 @@ struct ContentView: View, ShowDatePicker {
         date = Date(timeIntervalSince1970: TimeInterval(timestamp.seconds))
         pickerShowing = true
     }
+    
+    func delete(id: String) {
+        deleteEvent = id
+        showingAlert = true
+    }
 
     func getViewModel() -> MainViewModel {
         return model
@@ -61,6 +73,19 @@ struct ContentView: View, ShowDatePicker {
         ZStack {
             let composeView = ComposeView(showPicker: self)
             composeView.ignoresSafeArea(.keyboard) // Compose has own keyboard handler
+            composeView.alert(Text("Delete"), isPresented: $showingAlert) {
+                Button("Cancel") {}
+                Button("Delete") {
+                    guard let id = deleteEvent else {
+                        showingAlert = false
+                        return
+                    }
+                    model.deleteEvent(id: id)
+                    showingAlert = false
+                }
+            } message: {
+                Text("Are you sure you want to delete this event?")
+            }
             
             if pickerShowing {
                 HStack {
@@ -94,7 +119,7 @@ struct ContentView: View, ShowDatePicker {
                         }
                     ).padding()
                 }.background(Color(UIColor.secondarySystemBackground))
-                .zIndex(2)
+                    .zIndex(2)
             }
         }
     }

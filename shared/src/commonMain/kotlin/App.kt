@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,6 +35,7 @@ fun App(
     viewModel: MainViewModel,
     showTimePicker: (Child, EventType) -> Unit = { _, _ -> },
     editEvent: (String, Timestamp) -> Unit = { _, _ -> },
+    deleteEvent: (String) -> Unit = { },
 ) = AppTheme {
     var selectedTabPosition by remember { mutableStateOf(0) }
     val children = remember { viewModel.children }
@@ -51,8 +53,10 @@ fun App(
                     .lastOrNull { it.child == currentChild?.id }
                     ?.label
 
-            day?.let { safeDay -> allSummaries.firstOrNull {
-                it.day == safeDay && it.child == currentChild?.id }
+            day?.let { safeDay ->
+                allSummaries.firstOrNull {
+                    it.day == safeDay && it.child == currentChild?.id
+                }
             }
         }
     }
@@ -62,7 +66,7 @@ fun App(
     var showingOptions by remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
-    val firstEvent by remember { derivedStateOf { currentTabEvents.firstOrNull() }}
+    val firstEvent by remember { derivedStateOf { currentTabEvents.firstOrNull() } }
     LaunchedEffect(firstEvent?.id) { listState.animateScrollToItem(0) }
 
     Scaffold(
@@ -90,7 +94,8 @@ fun App(
             onItemSelected = {
                 (it as? Rows.Event)?.let { selectedCard = it }
             },
-            onItemEdited = { editEvent(it.id, it.timeStamp) }
+            onItemEdited = { editEvent(it.id, it.timeStamp) },
+            onItemDeleted = { deleteEvent(it.id) },
         )
     }
     AnimatedVisibility(
@@ -170,6 +175,7 @@ private fun EventsList(
     currentTabEvents: List<Rows>,
     onItemSelected: (Rows) -> Unit,
     onItemEdited: (Rows.Event) -> Unit,
+    onItemDeleted: (Rows.Event) -> Unit,
 ) = LazyColumn(
     modifier = Modifier.padding(it).fillMaxWidth(),
     state = state,
@@ -195,6 +201,7 @@ private fun EventsList(
                 selected = selectedEvent == row.id,
                 onClick = { onItemSelected(row) },
                 onEdit = onItemEdited,
+                onDelete = onItemDeleted,
             )
         }
     }
@@ -207,6 +214,7 @@ private fun Event(
     selected: Boolean,
     onClick: () -> Unit,
     onEdit: (Rows.Event) -> Unit,
+    onDelete: (Rows.Event) -> Unit,
 ) {
     val container by animateColorAsState(
         if (selected) MaterialTheme.colorScheme.primaryContainer
@@ -246,11 +254,19 @@ private fun Event(
                 enter = fadeIn() + slideInHorizontally { it / 2 },
                 exit = slideOutHorizontally { it / 2 } + fadeOut(),
             ) {
-                IconButton(
-                    modifier = Modifier.size(40.dp).padding(end = 16.dp),
-                    onClick = { onEdit(event) },
-                    content = { Icon(Icons.Filled.Edit, null) }
-                )
+                Row {
+                    IconButton(
+                        modifier = Modifier.size(40.dp).padding(end = 16.dp),
+                        onClick = { onEdit(event) },
+                        content = { Icon(Icons.Filled.Edit, null) }
+                    )
+                    Spacer(Modifier.size(12.dp))
+                    IconButton(
+                        modifier = Modifier.size(40.dp).padding(end = 16.dp),
+                        onClick = { onDelete(event) },
+                        content = { Icon(Icons.Filled.Delete, null) }
+                    )
+                }
             }
         }
         Spacer(Modifier.size(16.dp))

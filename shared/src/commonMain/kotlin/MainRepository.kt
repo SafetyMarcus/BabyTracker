@@ -27,103 +27,119 @@ object MainRepository {
             }
     }
 
-    suspend fun getEvents() {
-        Firebase.firestore
-            .collection("events")
-            .snapshots
-            .collect {
-                val updatedEvents = ArrayList<Rows>()
-                val updatedSummaries = ArrayList<Summary>()
-                var day = Rows.Day("", "")
-                it.documents
-                    .map { it.data<Event>().apply { id = it.id } }
-                    .sortedBy { it.time.seconds }
-                    .forEach { event ->
-                        val dayRow = Rows.Day(
-                            label = event.time.format("d MMMM"),
-                            child = event.child
-                        )
-                        if (day != dayRow) {
-                            updatedEvents.add(dayRow)
-                            updatedSummaries.add(
-                                Summary(
-                                    child = event.child,
-                                    day = dayRow.label,
-                                )
-                            )
-                            day = dayRow
-                        }
-                        val type = EventType.valueOf(event.event)
-                        updatedEvents.add(
-                            Rows.Event(
-                                _id = event.id,
-                                label = type.display,
-                                child = event.child,
-                                day = dayRow.label,
-                                timeStamp = event.time,
-                            )
-                        )
-                        updatedSummaries.lastOrNull { it.child == event.child }?.apply {
-                            when (type) {
-                                EventType.MIXED_NAPPY -> mixedNappyTotal++
-                                EventType.WET_NAPPY -> wetNappyTotal++
-                                EventType.SLEEP_START -> sleepStartTemp = event.time
-                                EventType.SLEEP_END -> {
-                                    sleepStartTemp?.let {
-                                        sleepTotalSeconds += event.time.seconds - it.seconds
-                                    }
-                                    sleepStartTemp = null
-                                }
-                                EventType.LEFT_FEED, EventType.RIGHT_FEED -> feedsTotal++
-                            }
-                        }
+    suspend fun getEvents() = Firebase.firestore
+        .collection("events")
+        .snapshots
+        .collect {
+            val updatedEvents = ArrayList<Rows>()
+            val updatedSummaries = ArrayList<Summary>()
+            var day = Rows.Day("", "")
+            it.documents
+                .map { it.data<Event>().apply { id = it.id } }
+                .sortedBy { it.time.seconds }
+                .forEach { event ->
+                    day = processEvent(
+                        event = event,
+                        currentDay = day,
+                        updatedEvents = updatedEvents,
+                        updatedSummaries = updatedSummaries
+                    )
+                }
+            events.clear()
+            events.addAll(updatedEvents.reversed())
+            summaries.clear()
+            summaries.addAll(updatedSummaries)
+        }
+
+    private fun processEvent(
+        event: Event,
+        currentDay: Rows.Day,
+        updatedEvents: ArrayList<Rows>,
+        updatedSummaries: ArrayList<Summary>
+    ): Rows.Day {
+        var returnDay = currentDay
+        val dayRow = Rows.Day(
+            label = event.time.format("d MMMM"),
+            child = event.child
+        )
+        if (currentDay != dayRow) {
+            updatedEvents.add(dayRow)
+            updatedSummaries.add(
+                Summary(
+                    child = event.child,
+                    day = dayRow.label,
+                )
+            )
+            returnDay = dayRow
+        }
+        val type = EventType.valueOf(event.event)
+        updatedEvents.add(
+            Rows.Event(
+                _id = event.id,
+                label = type.display,
+                child = event.child,
+                day = dayRow.label,
+                timeStamp = event.time,
+            )
+        )
+        updatedSummaries.lastOrNull { it.child == event.child }?.apply {
+            when (type) {
+                EventType.MIXED_NAPPY -> mixedNappyTotal++
+                EventType.WET_NAPPY -> wetNappyTotal++
+                EventType.SLEEP_START -> sleepStartTemp = event.time
+                EventType.SLEEP_END -> {
+                    sleepStartTemp?.let {
+                        sleepTotalSeconds += event.time.seconds - it.seconds
                     }
-                events.clear()
-                events.addAll(updatedEvents.reversed())
-                summaries.clear()
-                summaries.addAll(updatedSummaries)
+                    sleepStartTemp = null
+                }
+
+                EventType.LEFT_FEED, EventType.RIGHT_FEED -> feedsTotal++
             }
+        }
+        return returnDay
     }
 
-    suspend fun getEventTypes() {
-        Firebase.firestore
-            .collection("event_types")
-            .snapshots
-            .collect {
-                eventTypes.clear()
-                eventTypes.addAll(
-                    it.documents
-                        .map { it.data<EventTypes>().apply { id = it.id } }
-                        .sortedBy { it.position }
-                )
-            }
-    }
+    suspend fun getEventTypes() = Firebase.firestore
+        .collection("event_types")
+        .snapshots
+        .collect {
+            eventTypes.clear()
+            eventTypes.addAll(
+                it.documents
+                    .map { it.data<EventTypes>().apply { id = it.id } }
+                    .sortedBy { it.position }
+            )
+        }
 
     suspend fun createEvent(
         child: String,
         eventType: EventType,
         timestamp: Timestamp,
-    ) {
-        Firebase.firestore
-            .collection("events")
-            .add(
-                Event(
-                    child = child,
-                    event = eventType.name.uppercase(),
-                    time = timestamp,
-                )
+    ) = Firebase.firestore
+        .collection("events")
+        .add(
+            Event(
+                child = child,
+                event = eventType.name.uppercase(),
+                time = timestamp,
             )
-    }
+        )
 
     suspend fun updateEvent(
         id: String,
         time: Timestamp,
-    ) {
-        Firebase.firestore
-            .collection("events")
-            .document(id)
-            .update(mapOf("time" to time,))
-    }
+    ) = Firebase.firestore
+        .collection("events")
+        .document(id)
+        .update(mapOf("time" to time))
+
+    suspend fun deleteEvent(
+        id: String
+    ) = Firebase.firestore
+        .collection("events")
+        .document(id)
+        .delete()
 }
 
 @Serializable

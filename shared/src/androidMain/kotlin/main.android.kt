@@ -24,7 +24,7 @@ actual fun randomUUID(): String = UUID.randomUUID().toString()
 
 private var imageLoader: ImageLoader? = null
 
-actual fun generateImageLoader() = imageLoader!!
+actual fun generateImageLoader(): ImageLoader = imageLoader!!
 
 @Composable
 fun MainView(
@@ -32,7 +32,8 @@ fun MainView(
     context: Context,
     showTimePicker: (Child, EventType) -> Unit = { _, _ -> },
     editEvent: (String, Timestamp) -> Unit = { _, _ -> },
-) = App(viewModel, showTimePicker, editEvent).also {
+    deleteEvent: (String) -> Unit = { },
+) = App(viewModel, showTimePicker, editEvent, deleteEvent).also {
     imageLoader = ImageLoader {
         components {
             setupDefaultComponents(context)

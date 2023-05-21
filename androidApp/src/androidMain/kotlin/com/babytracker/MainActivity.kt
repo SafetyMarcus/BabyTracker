@@ -55,6 +55,8 @@ class MainActivity : AppCompatActivity() {
                 var currentTime by remember { mutableStateOf(Timestamp.now()) }
                 var currentEvent by remember { mutableStateOf<String?>(null) }
                 var current by remember { mutableStateOf<Pair<Child, EventType>?>(null) }
+                var showingDelete = remember { mutableStateOf<String?>(null) }
+
                 MainView(
                     viewModel = viewModel,
                     context = this,
@@ -68,7 +70,8 @@ class MainActivity : AppCompatActivity() {
                         currentTime = time
                         current = null
                         showing.value = true
-                    }
+                    },
+                    deleteEvent = { showingDelete.value = it }
                 )
                 TimePickerAlert(
                     showing = showing,
@@ -78,84 +81,107 @@ class MainActivity : AppCompatActivity() {
                         viewModel.addEvent(child, type, it)
                     } ?: viewModel.editEvent(currentEvent ?: "", it)
                 }
+                showingDelete.value?.let { DeleteEventAlert(showingDelete) }
             }
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun TimePickerAlert(
-        showing: MutableState<Boolean>,
-        current: Timestamp,
-        onSet: (Timestamp) -> Unit
-    ) = showing.takeIf { it.value }?.let {
-        AlertDialog(
-            properties = DialogProperties(decorFitsSystemWindows = false),
-            onDismissRequest = { showing.value = false },
-        ) {
-            Surface(
-                modifier = Modifier
-                    .wrapContentWidth()
-                    .wrapContentHeight(),
-                shape = MaterialTheme.shapes.large,
-                tonalElevation = AlertDialogDefaults.TonalElevation
-            ) { DialogContent(current = current, showing = showing, onSet = onSet) }
-        }
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    private fun DialogContent(
-        current: Timestamp = Timestamp.now(),
-        showing: MutableState<Boolean>,
-        onSet: (Timestamp) -> Unit,
-    ) = Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                start = 16.dp,
-                end = 16.dp,
-                top = 16.dp,
-                bottom = 8.dp
-            ),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        val calendar by remember {
-            derivedStateOf {
-                Calendar.getInstance().apply { timeInMillis = current.seconds * 1000 }
+    private fun DeleteEventAlert(
+        showingDelete: MutableState<String?>,
+    ) = AlertDialog(
+        title = { Text(text = "Delete") },
+        text = { Text(text = "Are you sure you want to delete this event?") },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    showingDelete.value?.let { viewModel.deleteEvent(it) }
+                    showingDelete.value = null
+                }
+            ) { Text(text = "Delete") }
+        },
+        dismissButton = {
+            TextButton(onClick = { showingDelete.value = null }) {
+                Text(text = "Cancel")
             }
-        }
-        val timePickerState = rememberTimePickerState(
-            initialHour = calendar.get(Calendar.HOUR_OF_DAY),
-            initialMinute = calendar.get(Calendar.MINUTE)
-        )
-        TimePicker(state = timePickerState)
-        DialogButtons(
-            onCancelClicked = { showing.value = false },
-            onDoneClicked = {
-                calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
-                calendar.set(Calendar.MINUTE, timePickerState.minute)
-                onSet(Timestamp.fromMilliseconds(calendar.timeInMillis.toDouble()))
-                showing.value = false
-            },
-        )
-    }
+        },
+        onDismissRequest = { showingDelete.value = null },
+    )
+}
 
-    @Composable
-    private fun DialogButtons(
-        onDoneClicked: () -> Unit,
-        onCancelClicked: () -> Unit,
-    ) = Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.End,
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimePickerAlert(
+    showing: MutableState<Boolean>,
+    current: Timestamp,
+    onSet: (Timestamp) -> Unit
+) = showing.takeIf { it.value }?.let {
+    AlertDialog(
+        properties = DialogProperties(decorFitsSystemWindows = false),
+        onDismissRequest = { showing.value = false },
     ) {
-        TextButton(
-            onClick = onCancelClicked,
-            content = { Text("Cancel") },
-        )
-        TextButton(
-            onClick = onDoneClicked,
-            content = { Text("Ok") },
-        )
+        Surface(
+            modifier = Modifier
+                .wrapContentWidth()
+                .wrapContentHeight(),
+            shape = MaterialTheme.shapes.large,
+            tonalElevation = AlertDialogDefaults.TonalElevation
+        ) { DialogContent(current = current, showing = showing, onSet = onSet) }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DialogContent(
+    current: Timestamp = Timestamp.now(),
+    showing: MutableState<Boolean>,
+    onSet: (Timestamp) -> Unit,
+) = Column(
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(
+            start = 16.dp,
+            end = 16.dp,
+            top = 16.dp,
+            bottom = 8.dp
+        ),
+    horizontalAlignment = Alignment.CenterHorizontally,
+) {
+    val calendar by remember {
+        derivedStateOf {
+            Calendar.getInstance().apply { timeInMillis = current.seconds * 1000 }
+        }
+    }
+    val timePickerState = rememberTimePickerState(
+        initialHour = calendar.get(Calendar.HOUR_OF_DAY),
+        initialMinute = calendar.get(Calendar.MINUTE)
+    )
+    TimePicker(state = timePickerState)
+    DialogButtons(
+        onCancelClicked = { showing.value = false },
+        onDoneClicked = {
+            calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+            calendar.set(Calendar.MINUTE, timePickerState.minute)
+            onSet(Timestamp.fromMilliseconds(calendar.timeInMillis.toDouble()))
+            showing.value = false
+        },
+    )
+}
+
+@Composable
+private fun DialogButtons(
+    onDoneClicked: () -> Unit,
+    onCancelClicked: () -> Unit,
+) = Row(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.End,
+) {
+    TextButton(
+        onClick = onCancelClicked,
+        content = { Text("Cancel") },
+    )
+    TextButton(
+        onClick = onDoneClicked,
+        content = { Text("Ok") },
+    )
 }
