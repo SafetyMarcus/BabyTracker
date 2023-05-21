@@ -161,7 +161,7 @@ private fun SummaryDisplay(summary: Summary?) = Row(
     )
     Tracker(
         value = summary?.feedsTotal?.roundToInt()?.toString() ?: "0",
-        label = "Total/Feeds",
+        label = "Total\nFeeds",
         color = MaterialTheme.colorScheme.secondary,
     )
 }
