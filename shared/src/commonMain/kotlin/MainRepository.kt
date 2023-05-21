@@ -1,5 +1,6 @@
 import androidx.compose.runtime.mutableStateListOf
 import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.DocumentSnapshot
 import dev.gitlive.firebase.firestore.Timestamp
 import dev.gitlive.firebase.firestore.firestore
@@ -12,6 +13,11 @@ object MainRepository {
     val events = mutableStateListOf<Rows>()
     val eventTypes = mutableStateListOf<EventTypes>()
     val summaries = mutableStateListOf<Summary>()
+
+    suspend fun logIn() = Firebase.auth.signInWithEmailAndPassword(
+        email = "",
+        password = ""
+    )
 
     suspend fun getChildren() {
         Firebase.firestore

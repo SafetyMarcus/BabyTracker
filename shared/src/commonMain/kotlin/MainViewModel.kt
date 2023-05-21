@@ -1,6 +1,7 @@
 import com.rickclephas.kmm.viewmodel.KMMViewModel
 import com.rickclephas.kmm.viewmodel.coroutineScope
 import dev.gitlive.firebase.firestore.Timestamp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainViewModel : KMMViewModel() {
@@ -11,13 +12,16 @@ class MainViewModel : KMMViewModel() {
 
     init {
         viewModelScope.coroutineScope.launch {
-            MainRepository.getChildren()
-        }
-        viewModelScope.coroutineScope.launch {
-            MainRepository.getEvents()
-        }
-        viewModelScope.coroutineScope.launch {
-            MainRepository.getEventTypes()
+            MainRepository.logIn()
+            viewModelScope.coroutineScope.launch {
+                MainRepository.getChildren()
+            }
+            viewModelScope.coroutineScope.launch {
+                MainRepository.getEvents()
+            }
+            viewModelScope.coroutineScope.launch {
+                MainRepository.getEventTypes()
+            }
         }
     }
 
