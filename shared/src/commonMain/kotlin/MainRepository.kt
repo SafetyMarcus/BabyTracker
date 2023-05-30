@@ -15,8 +15,8 @@ object MainRepository {
     val summaries = mutableStateListOf<Summary>()
 
     suspend fun logIn() = Firebase.auth.signInWithEmailAndPassword(
-        email = "hooperarma@gmail.com",
-        password = "highland-subsoil-rubric-cordoba"
+        email = "",
+        password = ""
     )
 
     suspend fun getChildren() {
