@@ -51,7 +51,7 @@ fun App(
             val day = currentDay
                 ?: allEvents
                     .filterIsInstance<Rows.Day>()
-                    .lastOrNull { it.child == currentChild?.id }
+                    .firstOrNull() { it.child == currentChild?.id }
                     ?.label
 
             day?.let { safeDay ->
@@ -76,7 +76,10 @@ fun App(
                 children = children,
                 selectedTabPosition = selectedTabPosition,
                 summary = currentSummary,
-                onTabSelected = { selectedTabPosition = it }
+                onTabSelected = {
+                    selectedTabPosition = it
+                    selectedCard = null
+                }
             )
         },
         floatingActionButton = {
