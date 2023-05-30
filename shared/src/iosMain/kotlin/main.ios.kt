@@ -6,6 +6,9 @@ import dev.gitlive.firebase.firestore.Timestamp
 import platform.Foundation.NSDate
 import platform.Foundation.NSDateFormatter
 import platform.Foundation.NSDateFormatterMediumStyle
+import platform.Foundation.NSNumber
+import platform.Foundation.NSNumberFormatter
+import platform.Foundation.NSNumberFormatterRoundDown
 import platform.Foundation.NSUUID
 
 actual fun getPlatformName(): String = "iOS"
@@ -34,6 +37,10 @@ actual fun generateImageLoader(): ImageLoader = ImageLoader {
         }
     }
 }
+
+actual fun Float.format() = NSNumberFormatter().apply {
+    roundingMode = NSNumberFormatterRoundDown
+}.stringFromNumber(NSNumber(this)) ?: ""
 
 fun MainViewController(
     viewModel: MainViewModel,

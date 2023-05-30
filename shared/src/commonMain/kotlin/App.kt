@@ -25,6 +25,7 @@ import com.seiko.imageloader.LocalImageLoader
 import com.seiko.imageloader.model.ImageRequest
 import com.seiko.imageloader.rememberAsyncImagePainter
 import dev.gitlive.firebase.firestore.Timestamp
+import kotlin.math.round
 import kotlin.math.roundToInt
 
 @OptIn(
@@ -155,7 +156,7 @@ private fun SummaryDisplay(summary: Summary?) = Row(
         color = MaterialTheme.colorScheme.secondary,
     )
     Tracker(
-        value = summary?.sleepTotalSeconds?.roundToInt()?.div(3600)?.toString() ?: "0",
+        value = summary?.sleepTotalSeconds?.div(3600)?.format() ?: "0",
         label = "Hours\nAsleep",
         color = MaterialTheme.colorScheme.primary,
     )
@@ -354,3 +355,5 @@ expect fun Timestamp.format(format: String): String
 expect fun randomUUID(): String
 
 expect fun generateImageLoader(): ImageLoader
+
+expect fun Float.format(): String
