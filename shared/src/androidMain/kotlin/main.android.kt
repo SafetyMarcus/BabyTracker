@@ -38,7 +38,7 @@ actual fun Float.format() = DecimalFormat("#.#").apply {
 fun MainView(
     viewModel: MainViewModel,
     context: Context,
-    showTimePicker: (Child, EventType) -> Unit = { _, _ -> },
+    showTimePicker: (Timestamp?, Child, EventType) -> Unit = { _, _, _ -> },
     editEvent: (String, Timestamp) -> Unit = { _, _ -> },
     deleteEvent: (String) -> Unit = { },
 ) = App(viewModel, showTimePicker, editEvent, deleteEvent).also {

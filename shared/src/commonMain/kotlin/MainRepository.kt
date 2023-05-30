@@ -68,6 +68,12 @@ object MainRepository {
             child = event.child
         )
         if (!days.contains(dayRow)) {
+            if (updatedEvents.isNotEmpty()) updatedEvents.add(
+                Rows.AddNew(
+                    child = event.child,
+                    day = (updatedEvents.last() as Rows.Event).timeStamp
+                )
+            )
             days.add(dayRow)
             updatedEvents.add(dayRow)
             updatedSummaries.add(
@@ -193,6 +199,7 @@ sealed class Rows(
     fun child() = when (this) {
         is Day -> child
         is Event -> child
+        is AddNew -> child
     }
 
     data class Day(
@@ -209,6 +216,11 @@ sealed class Rows(
     ) : Rows(id = _id) {
         val time = timeStamp.format("hh:mm a")
     }
+
+    data class AddNew(
+        val child: String,
+        val day: Timestamp,
+    ) : Rows(id = randomUUID())
 }
 
 enum class EventType(

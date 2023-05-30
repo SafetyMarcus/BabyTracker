@@ -55,13 +55,13 @@ class MainActivity : AppCompatActivity() {
                 var currentTime by remember { mutableStateOf(Timestamp.now()) }
                 var currentEvent by remember { mutableStateOf<String?>(null) }
                 var current by remember { mutableStateOf<Pair<Child, EventType>?>(null) }
-                var showingDelete = remember { mutableStateOf<String?>(null) }
+                val showingDelete = remember { mutableStateOf<String?>(null) }
 
                 MainView(
                     viewModel = viewModel,
                     context = this,
-                    showTimePicker = { child, type ->
-                        currentTime = Timestamp.now()
+                    showTimePicker = { timestamp, child, type ->
+                        currentTime = timestamp ?: Timestamp.now()
                         current = child to type
                         showing.value = true
                     },

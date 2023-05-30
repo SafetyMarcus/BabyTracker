@@ -2,6 +2,7 @@ import UIKit
 import SwiftUI
 import KMMViewModelSwiftUI
 import shared
+import FirebaseFirestore
 
 struct ComposeView: UIViewControllerRepresentable {
     var viewModel: MainViewModel
@@ -15,8 +16,12 @@ struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         Main_iosKt.MainViewController(
             viewModel: viewModel,
-            showTimePicker: { Child, EventType in
-                showPicker.show(child: Child, type: EventType)
+            showTimePicker: { TimeStamp, Child, EventType in
+                showPicker.show(
+                    timestamp: TimeStamp,
+                    child: Child,
+                    type: EventType
+                )
             },
             editEvent: { String, Firebase_firestoreTimestamp in
                 showPicker.edit(id: String, timestamp: Firebase_firestoreTimestamp)
@@ -30,7 +35,7 @@ struct ComposeView: UIViewControllerRepresentable {
 }
 
 protocol ShowDatePicker {
-    func show(child: Child, type: EventType)
+    func show(timestamp: Firebase_firestoreTimestamp?, child: Child, type: EventType)
     func edit(id: String, timestamp: Firebase_firestoreTimestamp)
     func delete(id: String)
     func getViewModel() -> MainViewModel
@@ -40,6 +45,7 @@ struct ContentView: View, ShowDatePicker {
     
     @State var date: Date = Date()
     @State var pickerShowing: Bool = false
+    @State var time: Firebase_firestoreTimestamp? = nil
     @State var child: Child? = nil
     @State var type: EventType? = nil
     @State var id: String? = nil
@@ -48,7 +54,12 @@ struct ContentView: View, ShowDatePicker {
     
     @StateViewModel var model = MainViewModel()
     
-    func show(child: Child, type: EventType) {
+    func show(timestamp: Firebase_firestoreTimestamp?, child: Child, type: EventType) {
+        if timestamp == nil {
+            date = Date()
+        } else {
+            date = Date(timeIntervalSince1970: TimeInterval(timestamp!.seconds))
+        }
         self.child = child
         self.type = type
         pickerShowing = true

@@ -25,7 +25,6 @@ import com.seiko.imageloader.LocalImageLoader
 import com.seiko.imageloader.model.ImageRequest
 import com.seiko.imageloader.rememberAsyncImagePainter
 import dev.gitlive.firebase.firestore.Timestamp
-import kotlin.math.round
 import kotlin.math.roundToInt
 
 @OptIn(
@@ -34,7 +33,7 @@ import kotlin.math.roundToInt
 @Composable
 fun App(
     viewModel: MainViewModel,
-    showTimePicker: (Child, EventType) -> Unit = { _, _ -> },
+    showTimePicker: (Timestamp?, Child, EventType) -> Unit = { _, _, _ -> },
     editEvent: (String, Timestamp) -> Unit = { _, _ -> },
     deleteEvent: (String) -> Unit = { },
 ) = AppTheme {
@@ -64,7 +63,7 @@ fun App(
     val currentTabEvents by remember(currentChild, allEvents) {
         derivedStateOf { allEvents.filter { it.child() == currentChild?.id } }
     }
-    var showingOptions by remember { mutableStateOf(false) }
+    var showingOptions by remember { mutableStateOf<Pair<Timestamp?, Boolean>>(null to false) }
 
     val listState = rememberLazyListState()
     val firstEvent by remember { derivedStateOf { currentTabEvents.firstOrNull() } }
@@ -84,7 +83,7 @@ fun App(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showingOptions = !showingOptions },
+                onClick = { showingOptions = null to !showingOptions.second },
                 content = { Icon(Icons.Default.Add, null) }
             )
         }
@@ -100,19 +99,20 @@ fun App(
             },
             onItemEdited = { editEvent(it.id, it.timeStamp) },
             onItemDeleted = { deleteEvent(it.id) },
+            addItem = { showingOptions = it.day to true },
         )
     }
     AnimatedVisibility(
-        visible = showingOptions,
+        visible = showingOptions.second,
         enter = fadeIn() + slideInVertically { it },
         exit = fadeOut() + slideOutVertically { it },
     ) {
         EventPicker(
             eventTypes = eventTypes,
-            close = { showingOptions = false },
+            close = { showingOptions = null to false },
             onTypeSelected = { eventType ->
-                showTimePicker(currentChild!!, eventType)
-                showingOptions = false
+                showTimePicker(showingOptions.first, currentChild!!, eventType)
+                showingOptions = null to false
             }
         )
     }
@@ -177,6 +177,7 @@ private fun EventsList(
     selectedDay: String,
     selectedEvent: String?,
     currentTabEvents: List<Rows>,
+    addItem: (Rows.AddNew) -> Unit,
     onItemSelected: (Rows) -> Unit,
     onItemEdited: (Rows.Event) -> Unit,
     onItemDeleted: (Rows.Event) -> Unit,
@@ -198,6 +199,10 @@ private fun EventsList(
             is Rows.Day -> DayDivider(
                 label = row.label,
                 selected = selectedDay == row.label,
+            )
+
+            is Rows.AddNew -> AddNewEvent(
+                onClick = { addItem(row) }
             )
 
             is Rows.Event -> Event(
@@ -275,6 +280,19 @@ private fun Event(
         }
         Spacer(Modifier.size(16.dp))
     }
+}
+
+@Composable
+private fun AddNewEvent(
+    onClick: () -> Unit,
+) = TextButton(
+    modifier = Modifier.padding(horizontal = 12.dp),
+    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+    onClick = onClick,
+) {
+    Icon(Icons.Filled.Add, null)
+    Spacer(Modifier.size(8.dp))
+    Text("Add New Event")
 }
 
 @Composable

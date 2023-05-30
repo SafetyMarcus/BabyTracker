@@ -44,7 +44,7 @@ actual fun Float.format() = NSNumberFormatter().apply {
 
 fun MainViewController(
     viewModel: MainViewModel,
-    showTimePicker: (Child, EventType) -> Unit = { _, _ -> },
+    showTimePicker: (Timestamp?, Child, EventType) -> Unit = { _, _, _ -> },
     editEvent: (String, Timestamp) -> Unit = { _, _ -> },
     deleteEvent: (String) -> Unit = { },
 ) = ComposeUIViewController {
