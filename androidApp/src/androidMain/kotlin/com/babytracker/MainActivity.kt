@@ -55,7 +55,6 @@ class MainActivity : AppCompatActivity() {
                 var currentTime by remember { mutableStateOf(Timestamp.now()) }
                 var currentEvent by remember { mutableStateOf<String?>(null) }
                 var current by remember { mutableStateOf<Pair<Child, EventType>?>(null) }
-                val showingDelete = remember { mutableStateOf<String?>(null) }
 
                 MainView(
                     viewModel = viewModel,
@@ -71,7 +70,6 @@ class MainActivity : AppCompatActivity() {
                         current = null
                         showing.value = true
                     },
-                    deleteEvent = { showingDelete.value = it }
                 )
                 TimePickerAlert(
                     showing = showing,
@@ -81,32 +79,9 @@ class MainActivity : AppCompatActivity() {
                         viewModel.addEvent(child, type, it)
                     } ?: viewModel.editEvent(currentEvent ?: "", it)
                 }
-                showingDelete.value?.let { DeleteEventAlert(showingDelete) }
             }
         }
     }
-
-    @Composable
-    private fun DeleteEventAlert(
-        showingDelete: MutableState<String?>,
-    ) = AlertDialog(
-        title = { Text(text = "Delete") },
-        text = { Text(text = "Are you sure you want to delete this event?") },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    showingDelete.value?.let { viewModel.deleteEvent(it) }
-                    showingDelete.value = null
-                }
-            ) { Text(text = "Delete") }
-        },
-        dismissButton = {
-            TextButton(onClick = { showingDelete.value = null }) {
-                Text(text = "Cancel")
-            }
-        },
-        onDismissRequest = { showingDelete.value = null },
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

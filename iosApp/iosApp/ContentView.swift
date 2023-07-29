@@ -25,9 +25,6 @@ struct ComposeView: UIViewControllerRepresentable {
             },
             editEvent: { String, Firebase_firestoreTimestamp in
                 showPicker.edit(id: String, timestamp: Firebase_firestoreTimestamp)
-            },
-            deleteEvent: { String in
-                showPicker.delete(id: String)
             })
     }
 
@@ -37,7 +34,6 @@ struct ComposeView: UIViewControllerRepresentable {
 protocol ShowDatePicker {
     func show(timestamp: Firebase_firestoreTimestamp?, child: Child, type: EventType)
     func edit(id: String, timestamp: Firebase_firestoreTimestamp)
-    func delete(id: String)
     func getViewModel() -> MainViewModel
 }
 
@@ -70,11 +66,6 @@ struct ContentView: View, ShowDatePicker {
         date = Date(timeIntervalSince1970: TimeInterval(timestamp.seconds))
         pickerShowing = true
     }
-    
-    func delete(id: String) {
-        deleteEvent = id
-        showingAlert = true
-    }
 
     func getViewModel() -> MainViewModel {
         return model
@@ -84,19 +75,6 @@ struct ContentView: View, ShowDatePicker {
         ZStack {
             let composeView = ComposeView(showPicker: self)
             composeView.ignoresSafeArea(.keyboard) // Compose has own keyboard handler
-            composeView.alert(Text("Delete"), isPresented: $showingAlert) {
-                Button("Cancel") {}
-                Button("Delete") {
-                    guard let id = deleteEvent else {
-                        showingAlert = false
-                        return
-                    }
-                    model.deleteEvent(id: id)
-                    showingAlert = false
-                }
-            } message: {
-                Text("Are you sure you want to delete this event?")
-            }
             
             if pickerShowing {
                 HStack {

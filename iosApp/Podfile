@@ -1,9 +1,14 @@
 target 'iosApp' do
   use_frameworks!
-  platform :ios, '14.1'
+  platform :ios, '15.2'
   pod 'shared', :path => '../shared'
-  pod 'KMMViewModelSwiftUI', '1.0.0-ALPHA-6'
-  pod 'FirebaseCore', :git => 'https://github.com/firebase/firebase-ios-sdk.git', :branch => 'master'
-  pod 'FirebaseFirestore', :git => 'https://github.com/firebase/firebase-ios-sdk.git', :branch => 'master'
 
+end
+
+post_install do |installer|
+ installer.pods_project.targets.each do |target|
+  target.build_configurations.each do |config|
+   config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.2'
+  end
+ end
 end

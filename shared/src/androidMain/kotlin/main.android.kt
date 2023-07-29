@@ -1,6 +1,11 @@
 import android.content.Context
 import android.icu.number.NumberFormatter
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import com.seiko.imageloader.ImageLoader
 import com.seiko.imageloader.cache.memory.maxSizePercent
 import com.seiko.imageloader.component.mapper.Base64Mapper
@@ -35,13 +40,32 @@ actual fun Float.format() = DecimalFormat("#.#").apply {
 }.format(this)
 
 @Composable
+actual fun DeleteAlert(
+    deleteClicked: () -> Unit,
+    cancelClicked: () -> Unit,
+) = AlertDialog(
+    title = { Text(text = "Delete") },
+    text = { Text(text = "Are you sure you want to delete this event?") },
+    confirmButton = {
+        TextButton(
+            onClick = deleteClicked
+        ) { Text(text = "Delete") }
+    },
+    dismissButton = {
+        TextButton(onClick = cancelClicked) {
+            Text(text = "Cancel")
+        }
+    },
+    onDismissRequest = cancelClicked,
+)
+
+@Composable
 fun MainView(
     viewModel: MainViewModel,
     context: Context,
     showTimePicker: (Timestamp?, Child, EventType) -> Unit = { _, _, _ -> },
     editEvent: (String, Timestamp) -> Unit = { _, _ -> },
-    deleteEvent: (String) -> Unit = { },
-) = App(viewModel, showTimePicker, editEvent, deleteEvent).also {
+) = App(viewModel, showTimePicker, editEvent).also {
     imageLoader = ImageLoader {
         components {
             setupDefaultComponents(context)

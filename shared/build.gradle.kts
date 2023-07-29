@@ -18,12 +18,13 @@ kotlin {
         version = "1.0.0"
         summary = "Shared application UI and business logic"
         homepage = "Not a real homepage"
-        ios.deploymentTarget = "14.1"
+        ios.deploymentTarget = "15.2"
         podfile = project.file("../iosApp/Podfile")
         framework {
             baseName = "shared"
             isStatic = true
         }
+        pod("KMMViewModelSwiftUI", "1.0.0-ALPHA-6")
         extraSpecAttributes["resources"] = "['src/commonMain/resources/**', 'src/iosMain/resources/**']"
     }
 

@@ -35,7 +35,6 @@ fun App(
     viewModel: MainViewModel,
     showTimePicker: (Timestamp?, Child, EventType) -> Unit = { _, _, _ -> },
     editEvent: (String, Timestamp) -> Unit = { _, _ -> },
-    deleteEvent: (String) -> Unit = { },
 ) = AppTheme {
     var selectedTabPosition by remember { mutableStateOf(0) }
     val children = remember { viewModel.children }
@@ -45,12 +44,14 @@ fun App(
     val allSummaries = remember { viewModel.summaries }
     var selectedCard by remember { mutableStateOf<Rows.Event?>(null) }
     val currentDay by remember { derivedStateOf { selectedCard?.day } }
+    val showingDelete = remember { mutableStateOf<String?>(null) }
+
     val currentSummary by remember {
         derivedStateOf {
             val day = currentDay
                 ?: allEvents
                     .filterIsInstance<Rows.Day>()
-                    .firstOrNull() { it.child == currentChild?.id }
+                    .firstOrNull { it.child == currentChild?.id }
                     ?.label
 
             day?.let { safeDay ->
@@ -98,8 +99,15 @@ fun App(
                 (it as? Rows.Event)?.let { selectedCard = it }
             },
             onItemEdited = { editEvent(it.id, it.timeStamp) },
-            onItemDeleted = { deleteEvent(it.id) },
+            onItemDeleted = { showingDelete.value = it.id },
             addItem = { showingOptions = it.day to true },
+        )
+        if (showingDelete.value != null) DeleteAlert(
+            deleteClicked = {
+                viewModel.deleteEvent(showingDelete.value!!)
+                showingDelete.value = null
+            },
+            cancelClicked = { showingDelete.value = null },
         )
     }
     AnimatedVisibility(
@@ -378,3 +386,9 @@ expect fun randomUUID(): String
 expect fun generateImageLoader(): ImageLoader
 
 expect fun Float.format(): String
+
+@Composable
+expect fun DeleteAlert(
+    deleteClicked: () -> Unit,
+    cancelClicked: () -> Unit,
+)
