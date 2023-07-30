@@ -33,8 +33,6 @@ import kotlin.math.roundToInt
 @Composable
 fun App(
     viewModel: MainViewModel,
-    showTimePicker: (Timestamp?, Child, EventType) -> Unit = { _, _, _ -> },
-    editEvent: (String, Timestamp) -> Unit = { _, _ -> },
 ) = AppTheme {
     var selectedTabPosition by remember { mutableStateOf(0) }
     val children = remember { viewModel.children }
@@ -44,7 +42,13 @@ fun App(
     val allSummaries = remember { viewModel.summaries }
     var selectedCard by remember { mutableStateOf<Rows.Event?>(null) }
     val currentDay by remember { derivedStateOf { selectedCard?.day } }
-    val showingDelete = remember { mutableStateOf<String?>(null) }
+
+    //Event editing
+    var showingDelete by remember { mutableStateOf<String?>(null) }
+    var showingTimePicker by remember { mutableStateOf(false) }
+    var currentTime by remember { mutableStateOf(Timestamp.now()) }
+    var currentEvent by remember { mutableStateOf<String?>(null) }
+    var current by remember { mutableStateOf<Pair<Child, EventType>?>(null) }
 
     val currentSummary by remember {
         derivedStateOf {
@@ -98,16 +102,31 @@ fun App(
             onItemSelected = {
                 (it as? Rows.Event)?.let { selectedCard = it }
             },
-            onItemEdited = { editEvent(it.id, it.timeStamp) },
-            onItemDeleted = { showingDelete.value = it.id },
+            onItemEdited = {
+                currentEvent = it.id
+                currentTime = it.timeStamp
+                current = null
+                showingTimePicker = true
+            },
+            onItemDeleted = { showingDelete = it.id },
             addItem = { showingOptions = it.day to true },
         )
-        if (showingDelete.value != null) DeleteAlert(
+        if (showingDelete != null) DeleteAlert(
             deleteClicked = {
-                viewModel.deleteEvent(showingDelete.value!!)
-                showingDelete.value = null
+                viewModel.deleteEvent(showingDelete!!)
+                showingDelete = null
             },
-            cancelClicked = { showingDelete.value = null },
+            cancelClicked = { showingDelete = null },
+        )
+        if (showingTimePicker) TimePickerAlert(
+            current = currentTime,
+            onSet = {
+                current?.let { (child, type) ->
+                    viewModel.addEvent(child, type, it)
+                } ?: viewModel.editEvent(currentEvent ?: "", it)
+                showingTimePicker = false
+            },
+            onDismiss = { showingTimePicker = false }
         )
     }
     AnimatedVisibility(
@@ -119,7 +138,9 @@ fun App(
             eventTypes = eventTypes,
             close = { showingOptions = null to false },
             onTypeSelected = { eventType ->
-                showTimePicker(showingOptions.first, currentChild!!, eventType)
+                currentTime = showingOptions.first ?: Timestamp.now()
+                current = currentChild!! to eventType
+                showingTimePicker = true
                 showingOptions = null to false
             }
         )
@@ -391,4 +412,11 @@ expect fun Float.format(): String
 expect fun DeleteAlert(
     deleteClicked: () -> Unit,
     cancelClicked: () -> Unit,
+)
+
+@Composable
+expect fun TimePickerAlert(
+    current: Timestamp,
+    onSet: (Timestamp) -> Unit,
+    onDismiss: () -> Unit,
 )

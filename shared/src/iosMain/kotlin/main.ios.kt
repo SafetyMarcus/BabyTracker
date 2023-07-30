@@ -12,11 +12,9 @@ import platform.Foundation.NSNumberFormatter
 import platform.Foundation.NSNumberFormatterRoundDown
 import platform.Foundation.NSUUID
 import platform.UIKit.UIAlertAction
-import platform.UIKit.UIAlertActionStyle
 import platform.UIKit.UIAlertActionStyleCancel
 import platform.UIKit.UIAlertActionStyleDestructive
 import platform.UIKit.UIAlertController
-import platform.UIKit.UIAlertControllerStyle
 
 actual fun getPlatformName(): String = "iOS"
 
@@ -74,14 +72,16 @@ actual fun DeleteAlert(
     }
 }
 
+@Composable
+actual fun TimePickerAlert(
+    current: Timestamp,
+    onSet: (Timestamp) -> Unit,
+    onDismiss: () -> Unit,
+) {
+}
+
 fun MainViewController(
     viewModel: MainViewModel,
-    showTimePicker: (Timestamp?, Child, EventType) -> Unit = { _, _, _ -> },
-    editEvent: (String, Timestamp) -> Unit = { _, _ -> },
 ) = ComposeUIViewController {
-    App(
-        viewModel = viewModel,
-        showTimePicker = showTimePicker,
-        editEvent = editEvent,
-    )
+    App(viewModel = viewModel)
 }

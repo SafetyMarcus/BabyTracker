@@ -1,23 +1,35 @@
 import android.content.Context
-import android.icu.number.NumberFormatter
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import com.seiko.imageloader.ImageLoader
 import com.seiko.imageloader.cache.memory.maxSizePercent
-import com.seiko.imageloader.component.mapper.Base64Mapper
-import com.seiko.imageloader.component.setupBase64Components
-import com.seiko.imageloader.component.setupCommonComponents
 import com.seiko.imageloader.component.setupDefaultComponents
 import dev.gitlive.firebase.firestore.Timestamp
+import dev.gitlive.firebase.firestore.fromMilliseconds
 import okio.Path.Companion.toOkioPath
-import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -59,13 +71,78 @@ actual fun DeleteAlert(
     onDismissRequest = cancelClicked,
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+actual fun TimePickerAlert(
+    current: Timestamp,
+    onSet: (Timestamp) -> Unit,
+    onDismiss: () -> Unit,
+) = AlertDialog(
+    onDismissRequest = onDismiss,
+) {
+    DialogContent(current = current, onSet = onSet, onDismiss = onDismiss)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DialogContent(
+    current: Timestamp = Timestamp.now(),
+    onSet: (Timestamp) -> Unit,
+    onDismiss: () -> Unit,
+) = Column(
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(
+            start = 16.dp,
+            end = 16.dp,
+            top = 16.dp,
+            bottom = 8.dp
+        ),
+    horizontalAlignment = Alignment.CenterHorizontally,
+) {
+    val calendar by remember {
+        derivedStateOf {
+            Calendar.getInstance().apply { timeInMillis = current.seconds * 1000 }
+        }
+    }
+    val timePickerState = rememberTimePickerState(
+        initialHour = calendar.get(Calendar.HOUR_OF_DAY),
+        initialMinute = calendar.get(Calendar.MINUTE)
+    )
+    TimePicker(state = timePickerState)
+    DialogButtons(
+        onCancelClicked = onDismiss,
+        onDoneClicked = {
+            calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+            calendar.set(Calendar.MINUTE, timePickerState.minute)
+            onSet(Timestamp.fromMilliseconds(calendar.timeInMillis.toDouble()))
+        },
+    )
+}
+
+@Composable
+private fun DialogButtons(
+    onDoneClicked: () -> Unit,
+    onCancelClicked: () -> Unit,
+) = Row(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.End,
+) {
+    TextButton(
+        onClick = onCancelClicked,
+        content = { Text("Cancel") },
+    )
+    TextButton(
+        onClick = onDoneClicked,
+        content = { Text("Ok") },
+    )
+}
+
 @Composable
 fun MainView(
     viewModel: MainViewModel,
     context: Context,
-    showTimePicker: (Timestamp?, Child, EventType) -> Unit = { _, _, _ -> },
-    editEvent: (String, Timestamp) -> Unit = { _, _ -> },
-) = App(viewModel, showTimePicker, editEvent).also {
+) = App(viewModel).also {
     imageLoader = ImageLoader {
         components {
             setupDefaultComponents(context)
