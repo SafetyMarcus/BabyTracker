@@ -2,114 +2,27 @@ import UIKit
 import SwiftUI
 import KMMViewModelSwiftUI
 import shared
-import FirebaseFirestore
 
 struct ComposeView: UIViewControllerRepresentable {
     var viewModel: MainViewModel
-    var showPicker: ShowDatePicker
     
-    init(showPicker: ShowDatePicker) {
-        self.showPicker = showPicker
-        self.viewModel = self.showPicker.getViewModel()
+    init() {
+        self.viewModel = MainViewModel()
     }
     
     func makeUIViewController(context: Context) -> UIViewController {
-        Main_iosKt.MainViewController(
-            viewModel: viewModel,
-            showTimePicker: { TimeStamp, Child, EventType in
-                showPicker.show(
-                    timestamp: TimeStamp,
-                    child: Child,
-                    type: EventType
-                )
-            },
-            editEvent: { String, Firebase_firestoreTimestamp in
-                showPicker.edit(id: String, timestamp: Firebase_firestoreTimestamp)
-            })
+        Main_iosKt.MainViewController(viewModel: viewModel)
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
 }
 
-protocol ShowDatePicker {
-    func show(timestamp: Firebase_firestoreTimestamp?, child: Child, type: EventType)
-    func edit(id: String, timestamp: Firebase_firestoreTimestamp)
-    func getViewModel() -> MainViewModel
-}
-
-struct ContentView: View, ShowDatePicker {
-    
-    @State var date: Date = Date()
-    @State var pickerShowing: Bool = false
-    @State var time: Firebase_firestoreTimestamp? = nil
-    @State var child: Child? = nil
-    @State var type: EventType? = nil
-    @State var id: String? = nil
-    @State var showingAlert: Bool = false
-    @State var deleteEvent: String? = nil
-    
-    @StateViewModel var model = MainViewModel()
-    
-    func show(timestamp: Firebase_firestoreTimestamp?, child: Child, type: EventType) {
-        if timestamp == nil {
-            date = Date()
-        } else {
-            date = Date(timeIntervalSince1970: TimeInterval(timestamp!.seconds))
-        }
-        self.child = child
-        self.type = type
-        pickerShowing = true
-    }
-    
-    func edit(id: String, timestamp: Firebase_firestoreTimestamp) {
-        self.id = id
-        date = Date(timeIntervalSince1970: TimeInterval(timestamp.seconds))
-        pickerShowing = true
-    }
-
-    func getViewModel() -> MainViewModel {
-        return model
-    }
+struct ContentView: View {
     
     var body: some View {
         ZStack {
-            let composeView = ComposeView(showPicker: self)
+            let composeView = ComposeView()
             composeView.ignoresSafeArea(.keyboard) // Compose has own keyboard handler
-            
-            if pickerShowing {
-                HStack {
-                    DatePicker(
-                        "",
-                        selection: $date,
-                        displayedComponents: .hourAndMinute
-                    ).datePickerStyle(.automatic)
-                    Spacer()
-                    Button(
-                        "Cancel",
-                        action: { pickerShowing = false }
-                    ).padding()
-                    Button(
-                        "Done",
-                        action: {
-                            pickerShowing = false
-                            let time = Firebase_firestoreTimestamp(
-                                seconds: Int64(date.timeIntervalSince1970),
-                                nanoseconds: 0
-                            )
-                            guard let id = id else {
-                                model.addEvent(
-                                    child: child!,
-                                    eventType: type!,
-                                    time: time
-                                )
-                                return
-                            }
-                            model.editEvent(id: id, time: time)
-                        }
-                    ).padding()
-                }.background(Color(UIColor.secondarySystemBackground))
-                    .zIndex(2)
-            }
         }
     }
 }
