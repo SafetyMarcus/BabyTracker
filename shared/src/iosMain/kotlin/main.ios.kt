@@ -4,8 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.interop.LocalUIViewController
 import androidx.compose.ui.unit.dp
@@ -15,20 +17,24 @@ import com.seiko.imageloader.cache.memory.maxSizePercent
 import com.seiko.imageloader.component.setupDefaultComponents
 import dev.gitlive.firebase.firestore.Timestamp
 import dev.gitlive.firebase.firestore.fromMilliseconds
+import dev.gitlive.firebase.firestore.toMilliseconds
 import kotlinx.cinterop.ExportObjCClass
 import kotlinx.cinterop.ObjCAction
 import kotlinx.cinterop.cstr
 import kotlinx.coroutines.DisposableHandle
-import platform.Foundation.NSCalendar
+import kotlinx.datetime.Instant
+import platform.CoreFoundation.kCFAbsoluteTimeIntervalSince1970
 import platform.Foundation.NSDate
 import platform.Foundation.NSDateFormatter
 import platform.Foundation.NSDateFormatterMediumStyle
+import platform.Foundation.NSLocale
 import platform.Foundation.NSNumber
 import platform.Foundation.NSNumberFormatter
 import platform.Foundation.NSNumberFormatterRoundDown
-import platform.Foundation.NSSecondCalendarUnit
 import platform.Foundation.NSSelectorFromString
+import platform.Foundation.NSTimeIntervalSince1970
 import platform.Foundation.NSUUID
+import platform.Foundation.timeIntervalSince1970
 import platform.UIKit.NSLayoutConstraint
 import platform.UIKit.UIAlertAction
 import platform.UIKit.UIAlertActionStyleCancel
@@ -58,13 +64,18 @@ import platform.objc.objc_setAssociatedObject
 
 actual fun getPlatformName(): String = "iOS"
 
+private fun Timestamp.toNSDate(): NSDate? {
+    val isoFormatter = NSDateFormatter()
+    isoFormatter.locale = NSLocale("en_US_POSIX")
+    isoFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+    val iso = Instant.fromEpochSeconds(this.seconds, this.nanoseconds).toString()
+    return isoFormatter.dateFromString(iso)
+}
 actual fun Timestamp.format(format: String): String {
     val formatter = NSDateFormatter()
     formatter.dateStyle = NSDateFormatterMediumStyle
     formatter.dateFormat = format
-    return formatter.stringFromDate(
-        NSDate(timeIntervalSinceReferenceDate = this.seconds.toDouble())
-    )
+    return formatter.stringFromDate(toNSDate() ?: return "")
 }
 
 actual fun randomUUID(): String = NSUUID().UUIDString
@@ -123,19 +134,17 @@ actual fun TimePickerAlert(
     onSet: (Timestamp) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val original by remember {
+        mutableStateOf(current.toNSDate())
+    }
+    var date by remember {
+        mutableStateOf(current.toNSDate() ?: NSDate())
+    }
     DatePickerViewController(
-        selectedDate = NSCalendar.currentCalendar().dateBySettingUnit(
-            unit = NSSecondCalendarUnit,
-            value = current.seconds,
-            ofDate = NSDate(),
-            options = 0,
-        )!!,
-        onDateChanged = { date ->
-            onSet(
-                Timestamp.fromMilliseconds(
-                    date.timeIntervalSinceReferenceDate * 1000
-                )
-            )
+        selectedDate = original ?: NSDate(),
+        onDateChanged = { updated -> date = updated },
+        onSave = {
+            onSet(Timestamp.fromMilliseconds(date.timeIntervalSince1970 * 1000))
         },
         datePickerCustomizer = {
             setPreferredDatePickerStyle(UIDatePickerStyle.UIDatePickerStyleWheels)
@@ -150,12 +159,14 @@ actual fun TimePickerAlert(
 internal fun DatePickerViewController(
     selectedDate: NSDate,
     onDateChanged: (NSDate) -> Unit,
+    onSave: () -> Unit,
     onDismissRequest: () -> Unit,
     datePickerCustomizer: UIDatePicker.() -> Unit = {},
     backgroundColor: Color = MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp),
 ) {
     val viewController = LocalUIViewController.current
 
+    val lastOnSave by rememberUpdatedState(onSave)
     val lastOnDateChanged by rememberUpdatedState(onDateChanged)
     val lastOnDismissRequest by rememberUpdatedState(onDismissRequest)
 
@@ -180,7 +191,7 @@ internal fun DatePickerViewController(
     DisposableEffect(datePickerViewController) {
         val handle = datePickerViewController.confirmButton
             .addEventHandler(UIControlEventTouchUpInside) {
-                lastOnDismissRequest()
+                lastOnSave()
             }
         onDispose {
             handle.dispose()

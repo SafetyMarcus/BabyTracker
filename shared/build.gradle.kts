@@ -42,6 +42,7 @@ kotlin {
                 implementation("dev.gitlive:firebase-common:1.8.1")
                 implementation("dev.gitlive:firebase-auth:1.8.1")
                 implementation("dev.gitlive:firebase-firestore:1.8.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
                 api("io.github.qdsfdhvh:image-loader:1.4.2")
             }
         }
