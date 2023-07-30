@@ -2,6 +2,9 @@ target 'iosApp' do
   use_frameworks!
   platform :ios, '15.2'
   pod 'shared', :path => '../shared'
+  pod 'FirebaseCore'
+  pod 'FirebaseAuth'
+  pod 'FirebaseFirestore'
 
 end
 
