@@ -92,7 +92,7 @@ actual fun DeleteAlert(
     deleteClicked: () -> Unit,
     cancelClicked: () -> Unit,
 ) {
-    UIAlertController().apply {
+    val alert = UIAlertController().apply {
         title = "Delete"
         message = "Are you sure you want to delete this event?"
         addAction(
@@ -110,6 +110,11 @@ actual fun DeleteAlert(
             )
         )
     }
+    LocalUIViewController.current.presentViewController(
+        viewControllerToPresent = alert,
+        animated = true,
+        completion = null
+    )
 }
 
 @Composable
