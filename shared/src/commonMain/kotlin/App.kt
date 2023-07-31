@@ -1,4 +1,5 @@
 import androidx.compose.animation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.style.TextAlign
@@ -155,15 +157,16 @@ private fun Toolbar(
     summary: Summary?,
     onTabSelected: (Int) -> Unit,
 ) = Column {
-    CenterAlignedTopAppBar(title = { Text("Events") })
+    Spacer(modifier = Modifier.height(48.dp))
     SummaryDisplay(summary)
     if (children.isNotEmpty()) TabRow(
         selectedTabIndex = selectedTabPosition,
-        modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+        modifier = Modifier.fillMaxWidth(),
         divider = { Divider() },
     ) {
         children.forEachIndexed { i, child ->
             Tab(
+                modifier = Modifier.padding(16.dp).clip(RoundedCornerShape(24.dp)),
                 selected = selectedTabPosition == i,
                 onClick = { onTabSelected(i) },
                 text = { Text(child.firstName) }
@@ -178,16 +181,6 @@ private fun SummaryDisplay(summary: Summary?) = Row(
     horizontalArrangement = Arrangement.SpaceEvenly,
 ) {
     Tracker(
-        value = summary?.wetNappyTotal?.roundToInt()?.toString() ?: "0",
-        label = "Wet\nNappies",
-        color = MaterialTheme.colorScheme.primary,
-    )
-    Tracker(
-        value = summary?.mixedNappyTotal?.roundToInt()?.toString() ?: "0",
-        label = "Mixed\nNappies",
-        color = MaterialTheme.colorScheme.secondary,
-    )
-    Tracker(
         value = summary?.sleepTotalSeconds?.div(3600)?.format() ?: "0",
         label = "Hours\nAsleep",
         color = MaterialTheme.colorScheme.primary,
@@ -195,6 +188,16 @@ private fun SummaryDisplay(summary: Summary?) = Row(
     Tracker(
         value = summary?.feedsTotal?.roundToInt()?.toString() ?: "0",
         label = "Total\nFeeds",
+        color = MaterialTheme.colorScheme.secondary,
+    )
+    Tracker(
+        value = summary?.wetNappyTotal?.roundToInt()?.toString() ?: "0",
+        label = "Wet\nNappies",
+        color = MaterialTheme.colorScheme.primary,
+    )
+    Tracker(
+        value = summary?.mixedNappyTotal?.roundToInt()?.toString() ?: "0",
+        label = "Mixed\nNappies",
         color = MaterialTheme.colorScheme.secondary,
     )
 }

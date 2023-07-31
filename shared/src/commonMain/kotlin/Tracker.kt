@@ -8,11 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.with
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -31,29 +26,19 @@ fun Tracker(
 ) = Column(
     horizontalAlignment = Alignment.CenterHorizontally,
 ) {
-    Box {
-        CircularProgressIndicator(
-            modifier = Modifier
-                .size(64.dp)
-                .padding(8.dp)
-                .align(Alignment.Center),
+    AnimatedContent(
+        targetState = value,
+        transitionSpec = slidingTextCounter(),
+    ) { targetValue ->
+        Text(
+            text = targetValue,
+            style = MaterialTheme.typography.headlineSmall,
             color = color,
-            progress = 100f,
         )
-        AnimatedContent(
-            modifier = Modifier.align(Alignment.Center),
-            targetState = value,
-            transitionSpec = slidingTextCounter(),
-        ) { targetValue ->
-            Text(
-                text = targetValue,
-                style = MaterialTheme.typography.headlineSmall,
-            )
-        }
     }
     Text(
         text = label,
-        style = MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.labelLarge,
         textAlign = TextAlign.Center,
     )
 }
