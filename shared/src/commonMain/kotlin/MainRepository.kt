@@ -4,8 +4,15 @@ import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.DocumentSnapshot
 import dev.gitlive.firebase.firestore.Timestamp
 import dev.gitlive.firebase.firestore.firestore
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 object MainRepository {
 
@@ -50,6 +57,15 @@ object MainRepository {
                         updatedEvents = updatedEvents,
                         updatedSummaries = updatedSummaries
                     )
+                }
+                .also {
+                    updatedSummaries.forEach { summary ->
+                        if (summary.day == Timestamp.now().format("d MMMM")) return@forEach
+                        summary.sleepStartTemp?.let {
+                            summary.sleepTotalSeconds += it.endOfDay().seconds - it.seconds
+                        }
+                        summary.sleepStartTemp = null
+                    }
                 }
             events.clear()
             events.addAll(updatedEvents.reversed())
@@ -101,15 +117,50 @@ object MainRepository {
                 EventType.WET_NAPPY -> wetNappyTotal++
                 EventType.SLEEP_START -> sleepStartTemp = event.time
                 EventType.SLEEP_END -> {
-                    sleepStartTemp?.let {
-                        sleepTotalSeconds += event.time.seconds - it.seconds
-                    }
+                    val start = sleepStartTemp ?: event.time.startOfDay()
+                    sleepTotalSeconds += event.time.seconds - start.seconds
                     sleepStartTemp = null
                 }
 
                 EventType.LEFT_FEED, EventType.RIGHT_FEED -> feedsTotal++
             }
         }
+    }
+
+    private fun Timestamp.startOfDay() = Instant.fromEpochSeconds(seconds).toLocalDateTime(
+        TimeZone.currentSystemDefault()
+    ).let {
+        val dateTime = LocalDateTime(
+            year = it.year,
+            monthNumber = it.monthNumber,
+            dayOfMonth = it.dayOfMonth,
+            hour = 0,
+            minute = 0,
+            second = 0,
+            nanosecond = 0
+        )
+        Timestamp(
+            seconds = dateTime.toInstant(TimeZone.currentSystemDefault()).epochSeconds,
+            nanoseconds = 0,
+        )
+    }
+
+    private fun Timestamp.endOfDay() = Instant.fromEpochSeconds(seconds).toLocalDateTime(
+        TimeZone.currentSystemDefault()
+    ).let {
+        val dateTime = LocalDateTime(
+            year = it.year,
+            monthNumber = it.monthNumber,
+            dayOfMonth = it.dayOfMonth,
+            hour = 23,
+            minute = 59,
+            second = 59,
+            nanosecond = 0
+        )
+        Timestamp(
+            seconds = dateTime.toInstant(TimeZone.currentSystemDefault()).plus(1.seconds).epochSeconds,
+            nanoseconds = 0,
+        )
     }
 
     suspend fun getEventTypes() = Firebase.firestore
@@ -191,6 +242,24 @@ data class Summary(
     var mixedNappyTotal: Float = 0f
     var sleepTotalSeconds: Float = 0f
     var sleepStartTemp: Timestamp? = null
+        set(value) {
+            field = value?.let {
+                val instant = Instant.fromEpochSeconds(it.seconds).toLocalDateTime(TimeZone.currentSystemDefault())
+                val time = LocalDateTime(
+                    year = instant.year,
+                    monthNumber = instant.monthNumber,
+                    dayOfMonth = instant.dayOfMonth,
+                    hour = instant.hour,
+                    minute = instant.minute,
+                    second = 0,
+                    nanosecond = 0,
+                )
+                Timestamp(
+                    seconds = time.toInstant(TimeZone.currentSystemDefault()).epochSeconds,
+                    nanoseconds = 0
+                )
+            } ?: value
+        }
 }
 
 sealed class Rows(
