@@ -1,5 +1,5 @@
 import androidx.compose.animation.*
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -19,14 +18,15 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.seiko.imageloader.ImageLoader
 import com.seiko.imageloader.LocalImageLoader
 import com.seiko.imageloader.model.ImageRequest
 import com.seiko.imageloader.rememberAsyncImagePainter
 import dev.gitlive.firebase.firestore.Timestamp
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @OptIn(
@@ -76,80 +76,102 @@ fun App(
     val firstEvent by remember { derivedStateOf { currentTabEvents.firstOrNull() } }
     LaunchedEffect(firstEvent?.id) { listState.animateScrollToItem(0) }
 
-    Scaffold(
-        topBar = {
-            Toolbar(
-                children = children,
-                selectedTabPosition = selectedTabPosition,
-                summary = currentSummary,
-                onTabSelected = {
-                    selectedTabPosition = it
-                    selectedCard = null
+    val sheetState = rememberStandardBottomSheetState(
+        skipHiddenState = false,
+        confirmValueChange = {
+            if (it == SheetValue.Hidden) showingOptions = null to false
+            true
+        }
+    )
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = sheetState,
+    )
+    val scope = rememberCoroutineScope()
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        sheetPeekHeight = 0.dp,
+        sheetContent = {
+            EventGrid(
+                eventTypes = eventTypes,
+                onTypeSelected = { eventType ->
+                    scope.launch {
+                        currentTime = showingOptions.first ?: Timestamp.now()
+                        current = currentChild!! to eventType
+                        showingTimePicker = true
+                        showingOptions = null to false
+                        sheetState.hide()
+                    }
                 }
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showingOptions = null to !showingOptions.second },
-                content = { Icon(Icons.Default.Add, null) }
+        topBar = {
+            Surface(
+                tonalElevation = 4.dp
+            ) {
+                Toolbar(
+                    children = children,
+                    selectedTabPosition = selectedTabPosition,
+                    summary = currentSummary,
+                    onTabSelected = {
+                        selectedTabPosition = it
+                        selectedCard = null
+                    }
+                )
+            }
+        },
+    ) {
+        Scaffold(
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        scope.launch {
+                            sheetState.expand()
+                            showingOptions = null to !showingOptions.second
+                        }
+                    },
+                    content = { Icon(Icons.Default.Add, null) }
+                )
+            }
+        ) {
+            EventsList(
+                it = it,
+                state = listState,
+                selectedDay = currentDay ?: "",
+                selectedEvent = selectedCard?.id,
+                currentTabEvents = currentTabEvents,
+                onItemSelected = {
+                    (it as? Rows.Event)?.let { selectedCard = it }
+                },
+                onItemEdited = {
+                    currentEvent = it.id
+                    currentTime = it.timeStamp
+                    current = null
+                    showingTimePicker = true
+                },
+                onItemDeleted = { showingDelete = it.id },
+                addItem = { showingOptions = it.day to true },
+            )
+            if (showingDelete != null) DeleteAlert(
+                deleteClicked = {
+                    viewModel.deleteEvent(showingDelete!!)
+                    showingDelete = null
+                },
+                cancelClicked = { showingDelete = null },
+            )
+            if (showingTimePicker) TimePickerAlert(
+                current = currentTime,
+                onSet = {
+                    current?.let { (child, type) ->
+                        viewModel.addEvent(child, type, it)
+                    } ?: viewModel.editEvent(currentEvent ?: "", it)
+                    showingTimePicker = false
+                },
+                onDismiss = { showingTimePicker = false }
             )
         }
-    ) {
-        EventsList(
-            it = it,
-            state = listState,
-            selectedDay = currentDay ?: "",
-            selectedEvent = selectedCard?.id,
-            currentTabEvents = currentTabEvents,
-            onItemSelected = {
-                (it as? Rows.Event)?.let { selectedCard = it }
-            },
-            onItemEdited = {
-                currentEvent = it.id
-                currentTime = it.timeStamp
-                current = null
-                showingTimePicker = true
-            },
-            onItemDeleted = { showingDelete = it.id },
-            addItem = { showingOptions = it.day to true },
-        )
-        if (showingDelete != null) DeleteAlert(
-            deleteClicked = {
-                viewModel.deleteEvent(showingDelete!!)
-                showingDelete = null
-            },
-            cancelClicked = { showingDelete = null },
-        )
-        if (showingTimePicker) TimePickerAlert(
-            current = currentTime,
-            onSet = {
-                current?.let { (child, type) ->
-                    viewModel.addEvent(child, type, it)
-                } ?: viewModel.editEvent(currentEvent ?: "", it)
-                showingTimePicker = false
-            },
-            onDismiss = { showingTimePicker = false }
-        )
-    }
-    AnimatedVisibility(
-        visible = showingOptions.second,
-        enter = fadeIn() + slideInVertically { it },
-        exit = fadeOut() + slideOutVertically { it },
-    ) {
-        EventPicker(
-            eventTypes = eventTypes,
-            close = { showingOptions = null to false },
-            onTypeSelected = { eventType ->
-                currentTime = showingOptions.first ?: Timestamp.now()
-                current = currentChild!! to eventType
-                showingTimePicker = true
-                showingOptions = null to false
-            }
-        )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Toolbar(
     children: SnapshotStateList<Child>,
@@ -214,14 +236,14 @@ private fun EventsList(
     onItemEdited: (Rows.Event) -> Unit,
     onItemDeleted: (Rows.Event) -> Unit,
 ) = LazyColumn(
-    modifier = Modifier.padding(it).fillMaxWidth(),
+    modifier = Modifier.fillMaxWidth(),
     state = state,
     reverseLayout = true,
     contentPadding = PaddingValues(
-        top = 16.dp,
-        start = 16.dp,
-        end = 16.dp,
-        bottom = 56.dp,
+        top = 16.dp + it.calculateTopPadding(),
+        start = 16.dp + it.calculateStartPadding(LayoutDirection.Ltr),
+        end = 16.dp + it.calculateEndPadding(LayoutDirection.Ltr),
+        bottom = 56.dp + it.calculateBottomPadding(),
     ),
 ) {
     items(
@@ -328,60 +350,42 @@ private fun AddNewEvent(
 }
 
 @Composable
-private fun EventPicker(
-    eventTypes: List<EventTypes>,
-    onTypeSelected: (EventType) -> Unit,
-    close: () -> Unit,
-) = ElevatedCard(
-    modifier = Modifier.fillMaxSize(),
-    shape = RectangleShape,
-    elevation = CardDefaults.elevatedCardElevation(6.dp),
-) {
-    Column(
-        Modifier.padding(24.dp)
-    ) {
-        IconButton(onClick = close) {
-            Icon(
-                Icons.Filled.Close,
-                null
-            )
-        }
-        Spacer(modifier = Modifier.size(16.dp))
-        EventGrid(eventTypes, onTypeSelected)
-    }
-}
-
-@Composable
 private fun EventGrid(
     eventTypes: List<EventTypes>,
     onTypeSelected: (EventType) -> Unit,
-) = LazyVerticalGrid(
-    modifier = Modifier.fillMaxSize(),
-    columns = GridCells.Fixed(2),
-    contentPadding = PaddingValues(16.dp),
-    horizontalArrangement = Arrangement.spacedBy(8.dp),
+) = LazyColumn(
+    contentPadding = PaddingValues(
+        bottom = 64.dp,
+    ),
     verticalArrangement = Arrangement.spacedBy(8.dp),
 ) {
     items(
         count = eventTypes.size,
     ) {
         val event = eventTypes[it]
-        OutlinedButton(
-            modifier = Modifier.fillMaxSize(),
-            shape = RoundedCornerShape(16.dp),
+        TextButton(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
             onClick = {
                 onTypeSelected(EventType.valueOf(event.id))
             }
         ) { EventButton(event) }
+        if (it != eventTypes.size - 1) {
+            Spacer(modifier = Modifier.size(8.dp))
+            Divider(Modifier.fillMaxWidth())
+        }
     }
 }
 
 @Composable
-private fun EventButton(event: EventTypes) = Column(Modifier.fillMaxSize()) {
+private fun EventButton(event: EventTypes) = Row(
+    modifier = Modifier.fillMaxWidth(),
+    verticalAlignment = CenterVertically,
+) {
     CompositionLocalProvider(
         LocalImageLoader provides generateImageLoader()
     ) {
         Icon(
+            modifier = Modifier.size(48.dp),
             painter = rememberAsyncImagePainter(
                 ImageRequest { data(event.image) }
             ),
@@ -389,13 +393,9 @@ private fun EventButton(event: EventTypes) = Column(Modifier.fillMaxSize()) {
             contentDescription = null,
         )
         Text(
-            modifier = Modifier.fillMaxWidth().padding(
-                start = 8.dp,
-                end = 8.dp,
-                bottom = 24.dp,
-            ),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp,),
             text = event.label,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Start,
             style = MaterialTheme.typography.titleMedium,
         )
     }

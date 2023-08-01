@@ -1,5 +1,6 @@
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
@@ -7,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.with
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
@@ -45,7 +47,7 @@ fun Tracker(
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-private fun slidingTextCounter(): AnimatedContentScope<String>.() -> ContentTransform = {
+private fun slidingTextCounter(): AnimatedContentTransitionScope<String>.() -> ContentTransform = {
     if ((targetState.toFloatOrNull() ?: 0f) > (initialState.toFloatOrNull() ?: 0f)) {
         //Queue a slide in (bottom up) for after any existing text animates out
         slideInVertically(
@@ -59,7 +61,7 @@ private fun slidingTextCounter(): AnimatedContentScope<String>.() -> ContentTran
                 delayMillis = 100
             )
             //Queue an instant slide out (upwards) and fade animation for existing text
-        ) with slideOutVertically(
+        ) togetherWith slideOutVertically(
             animationSpec = tween(durationMillis = 100)
         ) { height -> -height } + fadeOut(
             animationSpec = tween(durationMillis = 100)
@@ -75,7 +77,7 @@ private fun slidingTextCounter(): AnimatedContentScope<String>.() -> ContentTran
                 durationMillis = 100,
                 delayMillis = 100
             )
-        ) with slideOutVertically(
+        ) togetherWith slideOutVertically(
             animationSpec = tween(durationMillis = 100)
         ) { height -> height } + fadeOut(
             animationSpec = tween(durationMillis = 100)
