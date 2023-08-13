@@ -3,6 +3,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import com.seiko.imageloader.LocalImageLoader
 
 private val LightColors = lightColorScheme(
     primary = md_theme_light_primary,
@@ -75,8 +78,12 @@ fun AppTheme(
     content: @Composable() () -> Unit
 ) {
     val colors = if (!useDarkTheme) LightColors else DarkColors
-    MaterialTheme(
-        colorScheme = colors,
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalImageLoader provides remember { generateImageLoader() }
+    ) {
+        MaterialTheme(
+            colorScheme = colors,
+            content = content
+        )
+    }
 }

@@ -100,7 +100,6 @@ object MainRepository {
             //TODO ensure not empty check is per child
             val previous = updatedEvents.lastForChild(event.child)
             if (previous != null) {
-                println("Previous day was ${previous.timeStamp.format("d MMMM")}")
                 updatedEvents.add(
                     Rows.AddNew(
                         child = event.child,

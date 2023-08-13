@@ -1,5 +1,4 @@
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -20,9 +19,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.seiko.imageloader.ImageLoader
-import com.seiko.imageloader.LocalImageLoader
 import com.seiko.imageloader.model.ImageRequest
-import com.seiko.imageloader.rememberAsyncImagePainter
+import com.seiko.imageloader.rememberImagePainter
 import dev.gitlive.firebase.firestore.Timestamp
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -93,7 +91,6 @@ fun App(
                 eventTypes = eventTypes,
                 onTypeSelected = { eventType ->
                     scope.launch {
-                        println("Timestamp: ${showingOptions.first?.format("dd HH:mm:a")}")
                         currentTime = showingOptions.first ?: Timestamp.now()
                         current = currentChild!! to eventType
                         showingTimePicker = true
@@ -304,18 +301,12 @@ private fun Event(
             Spacer(Modifier.size(8.dp))
             Column {
                 Row {
-                    CompositionLocalProvider(
-                        LocalImageLoader provides generateImageLoader()
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(24.dp),
-                            painter = rememberAsyncImagePainter(
-                                ImageRequest { data(event.image) }
-                            ),
-                            tint = Color.Unspecified,
-                            contentDescription = null,
-                        )
-                    }
+                    Icon(
+                        modifier = Modifier.size(24.dp),
+                        painter = rememberImagePainter(event.image ?: ""),
+                        tint = Color.Unspecified,
+                        contentDescription = null,
+                    )
                     Text(
                         modifier = Modifier.padding(horizontal = 4.dp),
                         text = event.label,
@@ -400,24 +391,18 @@ private fun EventButton(event: EventTypes) = Row(
     modifier = Modifier.fillMaxWidth(),
     verticalAlignment = CenterVertically,
 ) {
-    CompositionLocalProvider(
-        LocalImageLoader provides generateImageLoader()
-    ) {
-        Icon(
-            modifier = Modifier.size(48.dp),
-            painter = rememberAsyncImagePainter(
-                ImageRequest { data(event.image) }
-            ),
-            tint = Color.Unspecified,
-            contentDescription = null,
-        )
-        Text(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-            text = event.label,
-            textAlign = TextAlign.Start,
-            style = MaterialTheme.typography.titleMedium,
-        )
-    }
+    Icon(
+        modifier = Modifier.size(48.dp),
+        painter = rememberImagePainter(event.image),
+        tint = Color.Unspecified,
+        contentDescription = null,
+    )
+    Text(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        text = event.label,
+        textAlign = TextAlign.Start,
+        style = MaterialTheme.typography.titleMedium,
+    )
 }
 
 expect fun getPlatformName(): String

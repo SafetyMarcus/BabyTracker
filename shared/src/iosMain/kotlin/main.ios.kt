@@ -23,7 +23,9 @@ import kotlinx.cinterop.ObjCAction
 import kotlinx.cinterop.cstr
 import kotlinx.coroutines.DisposableHandle
 import kotlinx.datetime.Instant
+import okio.Path.Companion.toPath
 import platform.CoreFoundation.kCFAbsoluteTimeIntervalSince1970
+import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSDate
 import platform.Foundation.NSDateFormatter
 import platform.Foundation.NSDateFormatterMediumStyle
@@ -31,9 +33,11 @@ import platform.Foundation.NSLocale
 import platform.Foundation.NSNumber
 import platform.Foundation.NSNumberFormatter
 import platform.Foundation.NSNumberFormatterRoundDown
+import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSSelectorFromString
 import platform.Foundation.NSTimeIntervalSince1970
 import platform.Foundation.NSUUID
+import platform.Foundation.NSUserDomainMask
 import platform.Foundation.timeIntervalSince1970
 import platform.UIKit.NSLayoutConstraint
 import platform.UIKit.UIAlertAction
@@ -82,16 +86,25 @@ actual fun randomUUID(): String = NSUUID().UUIDString
 
 actual fun generateImageLoader(): ImageLoader = ImageLoader {
     components {
-        setupDefaultComponents(imageScope)
+        setupDefaultComponents()
     }
     interceptor {
         memoryCacheConfig {
-            maxSizePercent(0.25)
+            maxSizeBytes(32 * 1024 * 1024)
         }
         diskCacheConfig {
+            directory(getCacheDir().toPath().resolve("image_cache"))
             maxSizeBytes(512L * 1024 * 1024) // 512MB
         }
     }
+}
+
+private fun getCacheDir(): String {
+    return NSSearchPathForDirectoriesInDomains(
+        NSCachesDirectory,
+        NSUserDomainMask,
+        true,
+    ).first() as String
 }
 
 actual fun Float.format() = NSNumberFormatter().apply {

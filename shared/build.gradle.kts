@@ -38,12 +38,12 @@ kotlin {
                 implementation(compose.material3)
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.components.resources)
-                implementation("com.rickclephas.kmm:kmm-viewmodel-core:1.0.0-ALPHA-6")
+                implementation("com.rickclephas.kmm:kmm-viewmodel-core:1.0.0-ALPHA-10")
                 implementation("dev.gitlive:firebase-common:1.8.1")
                 implementation("dev.gitlive:firebase-auth:1.8.1")
                 implementation("dev.gitlive:firebase-firestore:1.8.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
-                api("io.github.qdsfdhvh:image-loader:1.4.2")
+                api("io.github.qdsfdhvh:image-loader:1.6.4")
             }
         }
         val androidMain by getting {
@@ -52,7 +52,7 @@ kotlin {
                 api("androidx.appcompat:appcompat:1.6.1")
                 api("androidx.compose.material3:material3:1.1.0")
                 api("androidx.core:core-ktx:1.10.0")
-                api("com.rickclephas.kmm:kmm-viewmodel-core:1.0.0-ALPHA-6")
+                api("com.rickclephas.kmm:kmm-viewmodel-core:1.0.0-ALPHA-10")
                 api("dev.gitlive:firebase-firestore:1.8.1")
             }
         }

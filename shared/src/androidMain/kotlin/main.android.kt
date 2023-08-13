@@ -1,5 +1,3 @@
-import android.content.Context
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,7 +5,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -19,13 +16,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
 import com.seiko.imageloader.ImageLoader
-import com.seiko.imageloader.cache.memory.maxSizePercent
-import com.seiko.imageloader.component.setupDefaultComponents
 import dev.gitlive.firebase.firestore.Timestamp
 import dev.gitlive.firebase.firestore.fromMilliseconds
-import okio.Path.Companion.toOkioPath
 import java.math.RoundingMode
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
@@ -43,9 +36,9 @@ actual fun Timestamp.format(format: String) = SimpleDateFormat(
 
 actual fun randomUUID(): String = UUID.randomUUID().toString()
 
-private var imageLoader: ImageLoader? = null
+var cachedLoader: ImageLoader? = null
 
-actual fun generateImageLoader(): ImageLoader = imageLoader!!
+actual fun generateImageLoader(): ImageLoader = cachedLoader!!
 
 actual fun Float.format() = DecimalFormat("#.#").apply {
     roundingMode = RoundingMode.DOWN
@@ -136,26 +129,4 @@ private fun DialogButtons(
         onClick = onDoneClicked,
         content = { Text("Ok") },
     )
-}
-
-@Composable
-fun MainView(
-    viewModel: MainViewModel,
-    context: Context,
-) = App(viewModel).also {
-    imageLoader = ImageLoader {
-        components {
-            setupDefaultComponents(context)
-        }
-        interceptor {
-            memoryCacheConfig {
-                // Set the max size to 25% of the app's available memory.
-                maxSizePercent(context, 0.25)
-            }
-            diskCacheConfig {
-                directory(context.cacheDir.resolve("image_cache").toOkioPath())
-                maxSizeBytes(512L * 1024 * 1024) // 512MB
-            }
-        }
-    }
 }
