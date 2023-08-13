@@ -47,11 +47,15 @@ object MainRepository {
             val updatedEvents = ArrayList<Rows>()
             val updatedSummaries = ArrayList<Summary>()
             val days = arrayListOf<Rows.Day>()
+            val types = HashMap<String, String>().apply {
+                eventTypes.forEach { this[it.id] = it.label }
+            }
             it.documents
                 .map { it.data<Event>().apply { id = it.id } }
                 .sortedBy { it.time.seconds }
                 .forEach { event ->
                     processEvent(
+                        types = types,
                         event = event,
                         days = days,
                         updatedEvents = updatedEvents,
@@ -74,6 +78,7 @@ object MainRepository {
         }
 
     private fun processEvent(
+        types: Map<String, String>,
         event: Event,
         days: MutableList<Rows.Day>,
         updatedEvents: ArrayList<Rows>,
@@ -103,7 +108,7 @@ object MainRepository {
         updatedEvents.add(
             Rows.Event(
                 _id = event.id,
-                label = type.display,
+                label = types.getOrElse(event.event) { "Unknown" },
                 child = event.child,
                 day = dayRow.label,
                 timeStamp = event.time,
@@ -292,13 +297,11 @@ sealed class Rows(
     ) : Rows(id = randomUUID())
 }
 
-enum class EventType(
-    val display: String,
-) {
-    WET_NAPPY("Wet nappy"),
-    MIXED_NAPPY("Mixed nappy"),
-    SLEEP_START("Sleep start"),
-    SLEEP_END("Sleep end"),
-    LEFT_FEED("Left feed"),
-    RIGHT_FEED("Right feed"),
+enum class EventType {
+    WET_NAPPY,
+    MIXED_NAPPY,
+    SLEEP_START,
+    SLEEP_END,
+    LEFT_FEED,
+    RIGHT_FEED,
 }
