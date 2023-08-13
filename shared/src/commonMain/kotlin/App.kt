@@ -1,4 +1,5 @@
 import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -299,16 +300,31 @@ private fun Event(
         onClick = onClick,
     ) {
         Spacer(Modifier.size(16.dp))
-        Row {
+        Row(verticalAlignment = CenterVertically) {
+            Spacer(Modifier.size(8.dp))
             Column {
-                Text(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    text = event.label,
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Row {
+                    CompositionLocalProvider(
+                        LocalImageLoader provides generateImageLoader()
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(24.dp),
+                            painter = rememberAsyncImagePainter(
+                                ImageRequest { data(event.image) }
+                            ),
+                            tint = Color.Unspecified,
+                            contentDescription = null,
+                        )
+                    }
+                    Text(
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                        text = event.label,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
                 Spacer(Modifier.size(4.dp))
                 Text(
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = 28.dp),
                     text = event.time,
                     style = MaterialTheme.typography.bodyMedium,
                 )

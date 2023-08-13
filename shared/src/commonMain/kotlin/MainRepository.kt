@@ -45,15 +45,19 @@ object MainRepository {
             val updatedEvents = ArrayList<Rows>()
             val updatedSummaries = ArrayList<Summary>()
             val days = children.associate { it.id to arrayListOf<Rows.Day>() }
-            val types = HashMap<String, String>().apply {
-                eventTypes.forEach { this[it.id] = it.label }
+            val labels = HashMap<String, String>()
+            val images = HashMap<String, String>()
+            eventTypes.forEach {
+                labels[it.id] = it.label
+                images[it.id] = it.image
             }
             it.documents
                 .map { it.data<Event>().apply { id = it.id } }
                 .sortedBy { it.time.seconds }
                 .forEach { event ->
                     processEvent(
-                        types = types,
+                        eventLabels = labels,
+                        eventImages = images,
                         event = event,
                         days = days,
                         updatedEvents = updatedEvents,
@@ -81,7 +85,8 @@ object MainRepository {
         .lastOrNull { it.child == child }
 
     private fun processEvent(
-        types: Map<String, String>,
+        eventLabels: Map<String, String>,
+        eventImages: Map<String, String>,
         event: Event,
         days: Map<String, MutableList<Rows.Day>>,
         updatedEvents: ArrayList<Rows>,
@@ -116,7 +121,8 @@ object MainRepository {
         updatedEvents.add(
             Rows.Event(
                 _id = event.id,
-                label = types.getOrElse(event.event) { "Unknown" },
+                label = eventLabels[event.event] ?: "Unknown",
+                image = eventImages[event.event],
                 child = event.child,
                 day = dayRow.label,
                 timeStamp = event.time,
@@ -298,6 +304,7 @@ sealed class Rows(
         val child: String,
         val day: String,
         val timeStamp: Timestamp,
+        val image: String?,
     ) : Rows(id = _id) {
         val time = timeStamp.format("hh:mm a")
     }
