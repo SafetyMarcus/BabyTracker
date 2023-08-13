@@ -1,10 +1,7 @@
 import androidx.compose.animation.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -95,6 +92,7 @@ fun App(
                 eventTypes = eventTypes,
                 onTypeSelected = { eventType ->
                     scope.launch {
+                        println("Timestamp: ${showingOptions.first?.format("dd HH:mm:a")}")
                         currentTime = showingOptions.first ?: Timestamp.now()
                         current = currentChild!! to eventType
                         showingTimePicker = true
@@ -125,8 +123,8 @@ fun App(
                 FloatingActionButton(
                     onClick = {
                         scope.launch {
+                            showingOptions = null to true
                             sheetState.expand()
-                            showingOptions = null to !showingOptions.second
                         }
                     },
                     content = { Icon(Icons.Default.Add, null) }
@@ -149,7 +147,12 @@ fun App(
                     showingTimePicker = true
                 },
                 onItemDeleted = { showingDelete = it.id },
-                addItem = { showingOptions = it.day to true },
+                addItem = {
+                    scope.launch {
+                        showingOptions = it.day to true
+                        sheetState.expand()
+                    }
+                },
             )
             if (showingDelete != null) DeleteAlert(
                 deleteClicked = {
@@ -393,7 +396,7 @@ private fun EventButton(event: EventTypes) = Row(
             contentDescription = null,
         )
         Text(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp,),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             text = event.label,
             textAlign = TextAlign.Start,
             style = MaterialTheme.typography.titleMedium,

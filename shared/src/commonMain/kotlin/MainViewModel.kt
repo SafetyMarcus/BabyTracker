@@ -1,26 +1,24 @@
+import androidx.compose.runtime.mutableStateListOf
 import com.rickclephas.kmm.viewmodel.KMMViewModel
 import com.rickclephas.kmm.viewmodel.coroutineScope
 import dev.gitlive.firebase.firestore.Timestamp
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainViewModel : KMMViewModel() {
-    val children = MainRepository.children
+    val children = mutableStateListOf<Child>()
+    val eventTypes = mutableStateListOf<EventTypes>()
     val events = MainRepository.events
     val summaries = MainRepository.summaries
-    val eventTypes = MainRepository.eventTypes
 
     init {
         viewModelScope.coroutineScope.launch {
             MainRepository.logIn()
-            viewModelScope.coroutineScope.launch {
-                MainRepository.getChildren()
-            }
+            children.clear()
+            children.addAll(MainRepository.getChildren())
+            eventTypes.clear()
+            eventTypes.addAll(MainRepository.getEventTypes())
             viewModelScope.coroutineScope.launch {
                 MainRepository.getEvents()
-            }
-            viewModelScope.coroutineScope.launch {
-                MainRepository.getEventTypes()
             }
         }
     }

@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun Tracker(
     value: String,
@@ -45,7 +44,6 @@ fun Tracker(
     )
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun slidingTextCounter(): AnimatedContentTransitionScope<String>.() -> ContentTransform = {
     if ((targetState.toFloatOrNull() ?: 0f) > (initialState.toFloatOrNull() ?: 0f)) {

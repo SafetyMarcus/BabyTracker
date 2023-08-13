@@ -11,14 +11,13 @@ import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 object MainRepository {
 
-    val children = mutableStateListOf<Child>()
+    val children = ArrayList<Child>()
+    val eventTypes = ArrayList<EventTypes>()
     val events = mutableStateListOf<Rows>()
-    val eventTypes = mutableStateListOf<EventTypes>()
     val summaries = mutableStateListOf<Summary>()
 
     suspend fun logIn() = Firebase.auth.signInWithEmailAndPassword(
@@ -26,19 +25,18 @@ object MainRepository {
         password = ""
     )
 
-    suspend fun getChildren() {
-        Firebase.firestore
-            .collection("children")
-            .snapshots
-            .collect {
-                children.clear()
-                children.addAll(
-                    it.documents
-                        .map<DocumentSnapshot, Child> { it.data() }
-                        .sortedBy { it.position }
-                )
-            }
-    }
+    suspend fun getChildren() = Firebase.firestore
+        .collection("children")
+        .get()
+        .let {
+            children.clear()
+            children.addAll(
+                it.documents
+                    .map<DocumentSnapshot, Child> { it.data() }
+                    .sortedBy { it.position }
+            )
+            children
+        }
 
     suspend fun getEvents() = Firebase.firestore
         .collection("events")
@@ -46,7 +44,7 @@ object MainRepository {
         .collect {
             val updatedEvents = ArrayList<Rows>()
             val updatedSummaries = ArrayList<Summary>()
-            val days = arrayListOf<Rows.Day>()
+            val days = children.associate { it.id to arrayListOf<Rows.Day>() }
             val types = HashMap<String, String>().apply {
                 eventTypes.forEach { this[it.id] = it.label }
             }
@@ -77,10 +75,15 @@ object MainRepository {
             summaries.addAll(updatedSummaries)
         }
 
+    //TODO replace this with event tracking per child as this is unnecessarily poorly performant
+    private fun ArrayList<Rows>.lastForChild(child: String) = this
+        .filterIsInstance<Rows.Event>()
+        .lastOrNull { it.child == child }
+
     private fun processEvent(
         types: Map<String, String>,
         event: Event,
-        days: MutableList<Rows.Day>,
+        days: Map<String, MutableList<Rows.Day>>,
         updatedEvents: ArrayList<Rows>,
         updatedSummaries: ArrayList<Summary>
     ) {
@@ -88,14 +91,19 @@ object MainRepository {
             label = event.time.format("d MMMM"),
             child = event.child
         )
-        if (!days.contains(dayRow)) {
-            if (updatedEvents.isNotEmpty()) updatedEvents.add(
-                Rows.AddNew(
-                    child = event.child,
-                    day = (updatedEvents.last() as Rows.Event).timeStamp
+        if (days[event.child]?.contains(dayRow) != true) {
+            //TODO ensure not empty check is per child
+            val previous = updatedEvents.lastForChild(event.child)
+            if (previous != null) {
+                println("Previous day was ${previous.timeStamp.format("d MMMM")}")
+                updatedEvents.add(
+                    Rows.AddNew(
+                        child = event.child,
+                        day = previous.timeStamp.startOfDay()
+                    )
                 )
-            )
-            days.add(dayRow)
+            }
+            days[event.child]?.add(dayRow)
             updatedEvents.add(dayRow)
             updatedSummaries.add(
                 Summary(
@@ -163,21 +171,23 @@ object MainRepository {
             nanosecond = 0
         )
         Timestamp(
-            seconds = dateTime.toInstant(TimeZone.currentSystemDefault()).plus(1.seconds).epochSeconds,
+            seconds = dateTime.toInstant(TimeZone.currentSystemDefault())
+                .plus(1.seconds).epochSeconds,
             nanoseconds = 0,
         )
     }
 
     suspend fun getEventTypes() = Firebase.firestore
         .collection("event_types")
-        .snapshots
-        .collect {
+        .get()
+        .let {
             eventTypes.clear()
             eventTypes.addAll(
                 it.documents
                     .map { it.data<EventTypes>().apply { id = it.id } }
                     .sortedBy { it.position }
             )
+            eventTypes
         }
 
     suspend fun createEvent(
@@ -249,7 +259,8 @@ data class Summary(
     var sleepStartTemp: Timestamp? = null
         set(value) {
             field = value?.let {
-                val instant = Instant.fromEpochSeconds(it.seconds).toLocalDateTime(TimeZone.currentSystemDefault())
+                val instant = Instant.fromEpochSeconds(it.seconds)
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
                 val time = LocalDateTime(
                     year = instant.year,
                     monthNumber = instant.monthNumber,
