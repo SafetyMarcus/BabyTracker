@@ -25,6 +25,9 @@ import kotlinx.coroutines.DisposableHandle
 import kotlinx.datetime.Instant
 import okio.Path.Companion.toPath
 import platform.CoreFoundation.kCFAbsoluteTimeIntervalSince1970
+import platform.CoreGraphics.CGRectGetMidX
+import platform.CoreGraphics.CGRectGetMidY
+import platform.CoreGraphics.CGRectMake
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSDate
 import platform.Foundation.NSDateFormatter
@@ -44,6 +47,8 @@ import platform.UIKit.UIAlertAction
 import platform.UIKit.UIAlertActionStyleCancel
 import platform.UIKit.UIAlertActionStyleDestructive
 import platform.UIKit.UIAlertController
+import platform.UIKit.UIAlertControllerStyle
+import platform.UIKit.UIAlertControllerStyleAlert
 import platform.UIKit.UIButton
 import platform.UIKit.UIButtonConfiguration
 import platform.UIKit.UIColor
@@ -57,9 +62,11 @@ import platform.UIKit.UIDatePickerMode
 import platform.UIKit.UIDatePickerStyle
 import platform.UIKit.UIEdgeInsetsMake
 import platform.UIKit.UILayoutConstraintAxisVertical
+import platform.UIKit.UIModalPresentationPopover
 import platform.UIKit.UISheetPresentationControllerDetent
 import platform.UIKit.UIStackView
 import platform.UIKit.UIViewController
+import platform.UIKit.popoverPresentationController
 import platform.UIKit.sheetPresentationController
 import platform.darwin.NSObject
 import platform.objc.OBJC_ASSOCIATION_RETAIN
@@ -119,6 +126,15 @@ actual fun DeleteAlert(
     val alert = UIAlertController().apply {
         title = "Delete"
         message = "Are you sure you want to delete this event?"
+        val sender = LocalUIViewController.current.view
+        popoverPresentationController?.setPermittedArrowDirections(0u)
+        popoverPresentationController?.sourceView = sender
+        popoverPresentationController?.sourceRect = CGRectMake(
+            x = CGRectGetMidX(sender.bounds),
+            y = CGRectGetMidY(sender.bounds),
+            width = 0.0,
+            height = 0.0
+        )
         addAction(
             UIAlertAction.actionWithTitle(
                 title = "Cancel",
@@ -273,8 +289,8 @@ private class DatePickerViewController(
             ),
         )
 
-        stack.insertArrangedSubview(datePicker, 0)
-        stack.insertArrangedSubview(confirmButton, 1)
+        stack.insertArrangedSubview(datePicker, 0u)
+        stack.insertArrangedSubview(confirmButton, 1u)
     }
 
     override fun viewDidDisappear(animated: Boolean) {

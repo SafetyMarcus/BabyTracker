@@ -26,7 +26,6 @@ kotlin {
             linkerOpts("-ObjC")
         }
         pod("KMMViewModelSwiftUI", "1.0.0-ALPHA-6")
-        extraSpecAttributes["resources"] = "['src/commonMain/resources/**', 'src/iosMain/resources/**']"
     }
 
     sourceSets {
